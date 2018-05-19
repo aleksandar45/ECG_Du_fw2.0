@@ -4,10 +4,8 @@
 #include "stm32l4xx_hal.h"
 #include "main.h"
 
-#define FLASH_DATA_STORAGE_START_ADDR  	ADDR_FLASH_PAGE_50 	//Start @ of Flash data storage area
-#define FLASH_DATA_STORAGE_END_ADDR  		ADDR_FLASH_PAGE_149 + FLASH_PAGE_SIZE - 1 //End @ of Flash data storage area
-#define FLASH_DBG_START_ADR						  ADDR_FLASH_PAGE_150  //Start @ of Flash debug area //
-#define FLASH_DBG_END_ADR     					ADDR_FLASH_PAGE_255 + FLASH_PAGE_SIZE - 1   // End @ of Flash debug area //
+#define FLASH_USER_START_ADDR   ADDR_FLASH_PAGE_16  //Start @ of user Flash area //
+#define FLASH_USER_END_ADDR     ADDR_FLASH_PAGE_255 + FLASH_PAGE_SIZE - 1   // End @ of user Flash area //
 
 //Base address of the Flash sectors
 #define ADDR_FLASH_PAGE_0     ((uint32_t)0x08000000) // Base @ of Page 0, 2 Kbytes //

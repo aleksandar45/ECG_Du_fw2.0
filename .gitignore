@@ -1,0 +1,11 @@
+# Object file
+*.o
+
+# Ignore directories
+/RTE/*
+/Objects/*
+/Listings/*
+/DebugConfig/*
+
+# uvguix Information
+*.uvguix*

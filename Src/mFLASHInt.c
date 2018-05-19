@@ -3,11 +3,7 @@
 uint32_t StartAddress;
 uint32_t EndAddress;
 
-void FLASH_Config(uint32_t StartAddr, uint32_t EndAddr){
-	StartAddress = StartAddr;
-	EndAddress = EndAddr;
-}
-void FLASH_Erase(void){
+void FLASH_Erase(uint32_t StartAddr, uint32_t EndAddr){
 	uint32_t FirstPage = 0, NbOfPages = 0;
 	uint32_t PAGEError = 0;
 	__IO uint32_t data32 = 0 , MemoryProgramStatus = 0;

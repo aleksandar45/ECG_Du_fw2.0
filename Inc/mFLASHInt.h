@@ -267,8 +267,7 @@
 #define ADDR_FLASH_PAGE_254   ((uint32_t)0x0807f000) // Base @ of Page 254, 2 Kbytes //
 #define ADDR_FLASH_PAGE_255   ((uint32_t)0x0807f800) // Base @ of Page 255, 2 Kbytes //
 
-void FLASH_Config(uint32_t StartAddr, uint32_t EndAddr);
-void FLASH_Erase(void);
+void FLASH_Erase(uint32_t StartAddr, uint32_t EndAddr);
 void FLASH_Program32(uint32_t offsetAddress,uint64_t data);
 uint32_t FLASH_Read32(uint32_t offsetAddress);
 static uint32_t GetPage(uint32_t Address);

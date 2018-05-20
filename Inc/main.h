@@ -43,12 +43,14 @@
 #include "mPWR.h"
 #include "mUART.h"
 #include "mADC.h"
+#include "mFLASHInt.h"
 #include "BLE_RN4871.h"
 #include "ECG_ADS1294.h"
 #include "BATT.h"
 
 // Defines ------------------------------------------------------------------//
 #define DEBUG_MODE
+#define FLASH_DATA_STORAGE
 //#define RN4871_Nucleo_Test_Board
 
 #ifdef RN4871_Nucleo_Test_Board
@@ -146,6 +148,7 @@ typedef enum {
 	BLE_WAIT_BATTERY_INF = 6,	//Wait some delay to send Battery information
 	BLE_WAIT_START_ACQ = 7,		//Wait start acquisition CMD
 	BLE_ACQ_TRANSFERING = 8,	//Transfering ECG data over BLE
+	BLE_ACQ_TRANSFERING_AND_STORING = 9,	//Transfering ECG data over BLE and storing packets in FLASH memory
 }ProgramStageTypeDef;
 
 // Exported constants --------------------------------------------------------//

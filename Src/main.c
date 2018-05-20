@@ -79,6 +79,15 @@ uint8_t dataPacket[130] = "ANssD11D12D13S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1
 uint8_t batteryPacket[10] = "BAT:000\r\n";
 //--------Variables for storing BLE data in packet-------//
 
+//--------Variables for storing BLE packets in FLASH-------//
+uint8_t dataPacketsFLASHRowCounter;
+uint8_t dataPacketsFLASHIndex;
+uint32_t flashAddress;
+uint32_t flashAddressBuffer[1125];
+uint32_t flashAddressIndex = 0;
+extern uint8_t flashBusy;
+//--------Variables for storing BLE packets in FLASH-------//
+
 //--------Test variables-----//
 uint8_t testData[150];
 int32_t testCounter=0;
@@ -157,7 +166,7 @@ int main(void)
 #endif
 			startTIM1 = 0;
 		}
-		if((programStage == BLE_ACQ_TRANSFERING) && (startTIM1)){
+		if(((programStage == BLE_ACQ_TRANSFERING)|| (programStage==BLE_ACQ_TRANSFERING_AND_STORING)) && (startTIM1)){
 			mTimer_TIM1_Start(&mTimHandle,50000);
 #ifdef DEBUG_MODE
 			if(!BATTHandle.lowLevelBattery){
@@ -221,7 +230,7 @@ int main(void)
 			}	
 		}
 		else if((BLEHandle.connectionStatus==CONNECTED) && (HAL_GPIO_ReadPin(BT_CFG2_PORT,BT_CFG2_PIN) == GPIO_PIN_RESET)){
-			if(programStage == BLE_ACQ_TRANSFERING){
+			if((programStage == BLE_ACQ_TRANSFERING)||(programStage==BLE_ACQ_TRANSFERING_AND_STORING)){
 #ifdef ECG_Du_v1_Board
 					ECG_Stop_Acquisition(&ECGHandle);
 #endif
@@ -273,7 +282,7 @@ int main(void)
 			}
 			else if(BLEHandle.statusMessage.message == DISCONNECT){
 				if(BLEHandle.connectionStatus == CONNECTED){
-					if(programStage == BLE_ACQ_TRANSFERING){
+					if((programStage == BLE_ACQ_TRANSFERING)||(programStage==BLE_ACQ_TRANSFERING_AND_STORING)){
 #ifdef ECG_Du_v1_Board
 						ECG_Stop_Acquisition(&ECGHandle);
 #endif
@@ -297,8 +306,8 @@ int main(void)
 			//--------Check if App command message is received---------//
 			if(BLEHandle.ackOrAppMessage.messageUpdated){
 				if(BLEHandle.ackOrAppMessage.message==APP_DOK){
-					if(programStage == BLE_ACQ_TRANSFERING){
-						if(BLEHandle.dataOKRespEnabled){
+					if((programStage == BLE_ACQ_TRANSFERING)||(programStage==BLE_ACQ_TRANSFERING_AND_STORING)){
+						if(BLEHandle.dataOKRespEnabled){												//not used
 							if(BLEHandle.ackOrAppMessage.param1 == packetNumber){						
 								BLEHandle.dataOKWaiting=0;
 								BLEHandle.repeatDataPacketCounter = 0;
@@ -311,13 +320,13 @@ int main(void)
 					}
 				}
 				else if(BLEHandle.ackOrAppMessage.message==APP_DNOK){
-					if(programStage == BLE_ACQ_TRANSFERING){
+					if((programStage == BLE_ACQ_TRANSFERING)||(programStage==BLE_ACQ_TRANSFERING_AND_STORING)){
 						BLEHandle.repeatDataPacket = 1;
 						BLEHandle.repeatDataPacketNumber = BLEHandle.ackOrAppMessage.param1;
 					}
 				}
 				else if(BLEHandle.ackOrAppMessage.message==APP_STOP_ACQ){
-					if(programStage == BLE_ACQ_TRANSFERING){
+					if((programStage == BLE_ACQ_TRANSFERING)||(programStage==BLE_ACQ_TRANSFERING_AND_STORING)){
 						programStage = BLE_WAIT_START_ACQ;
 						startTIM1 = 1;
 						
@@ -332,17 +341,27 @@ int main(void)
 					if(programStage == BLE_WAIT_START_ACQ){
 						programStage = BLE_ACQ_TRANSFERING;
 					  startTIM1 = 1;
-						EnterHighEnergyMODE();		
+						EnterHighEnergyMODE();
 						
-#ifdef ECG_Du_v1_Board
-						ECG_Start_Acquisition(&ECGHandle);
-#endif	
 						packetNumber = 0;
 						BLEHandle.dataOKWaiting = 0;
 						BLEHandle.repeatDataPacket = 0;
 						BLEHandle.repeatDataPacketCounter = 0;
 						dataPacketsRowCounter = 0;
 						testCounter = 0;
+						
+#ifdef FLASH_DATA_STORAGE			
+						dataPacketsFLASHRowCounter = dataPacketsRowCounter;
+						dataPacketsFLASHIndex = 0;
+						flashAddress = FLASH_DATA_STORAGE_START_ADDR;
+						flashAddressIndex = 0;
+						programStage = BLE_ACQ_TRANSFERING_AND_STORING;
+						FLASH_Erase(FLASH_DATA_STORAGE_START_ADDR, FLASH_DATA_STORAGE_END_ADDR);						
+#endif
+						
+#ifdef ECG_Du_v1_Board
+						ECG_Start_Acquisition(&ECGHandle);
+#endif							
 					}
 					
 				}
@@ -361,8 +380,33 @@ int main(void)
 			}
 			//--------Check if App command message is received---------//
 				
+			//-------------Store packets in FLASH memory---------------//
+			if(programStage==BLE_ACQ_TRANSFERING_AND_STORING){
+				if((dataPacketsFLASHRowCounter!=dataPacketsRowCounter) && (!flashBusy)){
+					if (HAL_FLASH_Program_IT(FLASH_TYPEPROGRAM_DOUBLEWORD, flashAddress, dataPacketsStorage[dataPacketsFLASHRowCounter][dataPacketsFLASHIndex+4]) == HAL_OK)
+					{
+						//Data packet [2:129] is stored
+						flashAddress = flashAddress + 8;
+						if(flashAddress >= FLASH_DATA_STORAGE_END_ADDR){		//this is irregular state
+							programStage = BLE_ACQ_TRANSFERING;
+						}
+						flashBusy = 1;
+						dataPacketsFLASHIndex++;
+						if(dataPacketsFLASHIndex>=127){
+							dataPacketsFLASHIndex = 0;
+							dataPacketsFLASHRowCounter++;
+							if(dataPacketsFLASHRowCounter >=10){
+								dataPacketsFLASHRowCounter = 0;
+							}
+						}
+					}
+					
+				}
+			}
+			//-------------Store packets in FLASH memory---------------//
+			
 			//--------Prepare BLE transfering packet---------//
-			if(programStage == BLE_ACQ_TRANSFERING){					
+			if((programStage == BLE_ACQ_TRANSFERING)||(programStage==BLE_ACQ_TRANSFERING_AND_STORING)){					
 				if(!BLEHandle.dataOKWaiting){
 					if(ECGHandle.dataFIFOAvailable > 60){
 						
@@ -463,8 +507,8 @@ int main(void)
 						//----------Store Data packet in internal memory-------//
 						
 						
-						if(BLEHandle.dataOKRespEnabled){
-							BLEHandle.dataOKWaiting=1;
+						if(BLEHandle.dataOKRespEnabled){								//not used				
+							BLEHandle.dataOKWaiting=1;										
 						}
 						else {
 							//-------If DNOK is received, repeat requested packet-------//
@@ -481,8 +525,7 @@ int main(void)
 											ECG_Stop_Acquisition(&ECGHandle);
 #endif						
 											EnterLowEnergyMODE();
-										}
-										;
+										}										
 										HAL_Delay(2);
 										break;
 									}
@@ -511,7 +554,7 @@ int main(void)
 						//BLE_SendData(&BLEHandle,errorPacket,129);  //transmit error message
 					}
 				}
-				else{
+				else{																						//not used
 					if(BLEHandle.repeatDataPacket){
 						BLE_SendData(&BLEHandle,dataPacket,129);							
 						BLEHandle.repeatDataPacketCounter++;

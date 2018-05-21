@@ -112,7 +112,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_6);
 #ifdef MCU_TEST_DATA
 	uint8_t i;
-	if(programStage == BLE_ACQ_TRANSFERING){
+	if((programStage == BLE_ACQ_TRANSFERING) || (programStage == BLE_ACQ_TRANSFERING_AND_STORING)){
 		//HAL_GPIO_WritePin(GPIOC,GPIO_PIN_6,GPIO_PIN_SET);
 		for(i=0;i<150;i+=3){
 			testData[i]=testCounter>>16;

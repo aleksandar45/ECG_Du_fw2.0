@@ -150,9 +150,9 @@
         <Bp>
           <Number>0</Number>
           <Type>0</Type>
-          <LineNumber>350</LineNumber>
+          <LineNumber>446</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134244110</Address>
+          <Address>134240432</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -161,14 +161,30 @@
           <BreakIfRCount>1</BreakIfRCount>
           <Filename>.\Src\main.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\iCardiologist\Src/main.c\350</Expression>
+          <Expression>\\iCardiologist\Src/main.c\446</Expression>
         </Bp>
         <Bp>
           <Number>1</Number>
           <Type>0</Type>
+          <LineNumber>428</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>134240230</Address>
+          <ByteObject>0</ByteObject>
+          <HtxType>0</HtxType>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>1</BreakIfRCount>
+          <Filename>.\Src\main.c</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression>\\iCardiologist\Src/main.c\428</Expression>
+        </Bp>
+        <Bp>
+          <Number>2</Number>
+          <Type>0</Type>
           <LineNumber>124</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134224350</Address>
+          <Address>134223826</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -179,12 +195,48 @@
           <ExecCommand></ExecCommand>
           <Expression>\\iCardiologist\Src/mPWR.c\124</Expression>
         </Bp>
+        <Bp>
+          <Number>3</Number>
+          <Type>0</Type>
+          <LineNumber>131</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>0</Address>
+          <ByteObject>0</ByteObject>
+          <HtxType>0</HtxType>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>0</BreakIfRCount>
+          <Filename>.\Src\mPWR.c</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression></Expression>
+        </Bp>
       </Breakpoint>
       <WatchWindow1>
         <Ww>
           <count>0</count>
           <WinNumber>1</WinNumber>
           <ItemText>BLEHandle</ItemText>
+        </Ww>
+        <Ww>
+          <count>1</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>flashAddressBuffer</ItemText>
+        </Ww>
+        <Ww>
+          <count>2</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>flashDataTempBuff</ItemText>
+        </Ww>
+        <Ww>
+          <count>3</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>data64</ItemText>
+        </Ww>
+        <Ww>
+          <count>4</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>dataPacket</ItemText>
         </Ww>
       </WatchWindow1>
       <Tracepoint>

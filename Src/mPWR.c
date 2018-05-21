@@ -103,6 +103,13 @@ void EnterStandByMODE(void){
 
 #ifdef RN4871_Nucleo_Test_Board	
 	HAL_PWREx_EnableGPIOPullUp(PWR_GPIO_A,PWR_GPIO_BIT_11);		// BT_UART_RX_IND
+	
+	 HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN2);		// Disable all used wakeup sources: WKUP pin 
+
+  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WUF2);					// Clear wake up Flag
+
+	HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN2_LOW);	// Enable wakeup pin WKUP2 
+	
 #endif
 #ifdef ECG_Du_v1_Board
 		

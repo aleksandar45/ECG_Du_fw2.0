@@ -151,6 +151,12 @@ void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle){
 	BLEHandle->uartBaudRate = 115200;
 	BLEHandle->uartHWControl = UART_HWCONTROL_NONE;
 #endif
+	BLEHandle->uartBufferForward = 1;
+	BLEHandle->uartDataAvailable = 0;
+	BLEHandle->uartBufferReadPointer = BLEHandle->uartReceiveBuffer;
+	uartHandle->RxState =HAL_UART_STATE_READY;
+	mUART_Config(uartHandle,BLEHandle->uartBaudRate,BLEHandle->uartHWControl);
+	mUART_Receive_IT(uartHandle,BLEHandle->uartReceiveBuffer,200);
 	
 	HAL_GPIO_WritePin(BT_RESET_PORT,BT_RESET_PIN,GPIO_PIN_RESET);				//Hardware Reset					
 	HAL_Delay(1);

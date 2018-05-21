@@ -9,8 +9,8 @@ void FLASH_Erase(uint32_t StartAddr, uint32_t EndAddr){
 	FLASH_EraseInitTypeDef EraseInitStruct;
 	
 	HAL_NVIC_DisableIRQ(FLASH_IRQn);
-	HAL_FLASH_Unlock();
-	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_OPTVERR);	
+	HAL_FLASH_Unlock();	
+	//__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_OPTVERR);	
 	
 	FirstPage = GetPage(StartAddr);
 	NbOfPages = GetPage(EndAddr) - FirstPage + 1;
@@ -19,11 +19,26 @@ void FLASH_Erase(uint32_t StartAddr, uint32_t EndAddr){
   EraseInitStruct.Banks       = FLASH_BANK_1;
   EraseInitStruct.Page        = FirstPage;
   EraseInitStruct.NbPages     = NbOfPages;
+
+	uint32_t tickstart = HAL_GetTick();
+    
+  while(__HAL_FLASH_GET_FLAG(FLASH_FLAG_BSY)) 
+  { 
+    if(FLASH_TIMEOUT_VALUE != HAL_MAX_DELAY)
+    {
+      if((HAL_GetTick() - tickstart) >= FLASH_TIMEOUT_VALUE)
+      {
+        Error_Handler();
+      }
+    } 
+  }
+	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
+		
   if(HAL_FLASHEx_Erase(&EraseInitStruct, &PAGEError) != HAL_OK)
   { 
-    /*
-      FLASH_ErrorTypeDef errorcode = HAL_FLASH_GetError();
-    */
+    
+    //FLASH_ErrorTypeDef errorcode = HAL_FLASH_GetError();
+   
     Error_Handler();
   }
 	HAL_FLASH_Lock();

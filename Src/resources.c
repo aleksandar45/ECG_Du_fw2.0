@@ -35,4 +35,4 @@ uint16_t crcTable[] = {
             0x8201, 0x42C0, 0x4380, 0x8341, 0x4100, 0x81C1, 0x8081, 0x4040,
         };
 
-uint8_t dataPacketsStorage[10][131];
+uint8_t dataPacketsStorage[20][131];

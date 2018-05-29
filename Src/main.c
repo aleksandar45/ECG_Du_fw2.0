@@ -63,7 +63,7 @@ uint8_t startTIM1;
 
 //--------Variables for storing BLE data in packet-------//
 extern uint16_t crcTable[];
-extern uint8_t dataPacketsStorage[10][131];
+extern uint8_t dataPacketsStorage[20][131];
 
 uint8_t dataPacketsRowCounter;
 uint16_t packetNumber;
@@ -82,6 +82,7 @@ uint8_t batteryPacket[10] = "BAT:000\r\n";
 //--------Variables for storing BLE packets in FLASH-------//
 uint8_t dataPacketsFLASHRowCounter;
 uint8_t dataPacketsFLASHIndex;
+int32_t previousFLASHDataPacket;
 uint32_t flashAddress;
 uint32_t flashAddressBuffer[1125];
 uint16_t flashFirstPacketNum;
@@ -117,6 +118,8 @@ int main(void)
   HAL_Init();
 	
   SystemClock_Config();		
+	
+	//FLASH_Erase(FLASH_DATA_STORAGE_START_ADDR, FLASH_DATA_STORAGE_END_ADDR);		
 	
 	__HAL_RCC_PWR_CLK_ENABLE();
 	 // Check and Clear the Wakeup flag 
@@ -292,7 +295,7 @@ int main(void)
 			}
 			else if(BLEHandle.statusMessage.message == STREAM_OPEN){
 				if((HAL_GPIO_ReadPin(BT_CFG1_PORT,BT_CFG1_PIN) == GPIO_PIN_RESET) && (HAL_GPIO_ReadPin(BT_CFG2_PORT,BT_CFG2_PIN) == GPIO_PIN_SET)){
-					BLEHandle.cmdMode = 0;	
+					BLEHandle.cmdMode = 0;						
 				}								
 			}
 			else if(BLEHandle.statusMessage.message == DISCONNECT){
@@ -368,6 +371,7 @@ int main(void)
 							programStage = BLE_FLASH_TRANSFERING;		
 							flashAddress = FLASH_DATA_STORAGE_START_ADDR;
 							flashAddressIndexTemp = 0;
+							previousFLASHDataPacket = -1;
 							HAL_FLASH_Lock();
 						}
 						else{
@@ -430,12 +434,20 @@ int main(void)
 					}
 					flashAddressIndexTemp++;
 					for(packetIndex=2;packetIndex<126;packetIndex+=4){
+						
 						data32 = *(__IO uint32_t *)flashAddress;
 						dataPacket[packetIndex] = data32>>24;
 						dataPacket[packetIndex+1] = data32>>16;
 						dataPacket[packetIndex+2] = data32>>8;
 						dataPacket[packetIndex+3] = data32 & 0xFF;
 						flashAddress = flashAddress + 4;
+						
+						if(packetIndex == 2){
+							if((previousFLASHDataPacket+1) != (data32>>16)){
+								previousFLASHDataPacket = 0;
+							}
+							previousFLASHDataPacket = data32>>16;
+						}
 					}
 					data32 = *(__IO uint32_t *)flashAddress;
 					dataPacket[packetIndex] = data32>>24;
@@ -454,7 +466,12 @@ int main(void)
 				
 			//-------------Store packets in FLASH memory---------------//
 			if(programStage==BLE_ACQ_TRANSFERING_AND_STORING){
-				if((dataPacketsFLASHRowCounter!=dataPacketsRowCounter) && (!flashBusy)){					
+				if((dataPacketsFLASHRowCounter!=dataPacketsRowCounter) && (!flashBusy)){		
+					if(dataPacketsFLASHRowCounter!=19){
+						if((dataPacketsFLASHRowCounter+1)!=dataPacketsRowCounter){
+							data64 = 0;
+						}
+					}
 					data64 = 0;
 					for(i=0;i<4;i++){
 						data64<<=8;
@@ -482,7 +499,7 @@ int main(void)
 							flashAddressBuffer[flashAddressIndex] = flashAddress;
 							dataPacketsFLASHIndex = 0;
 							dataPacketsFLASHRowCounter++;
-							if(dataPacketsFLASHRowCounter >=10){
+							if(dataPacketsFLASHRowCounter >=20){
 								dataPacketsFLASHRowCounter = 0;
 							}
 						}
@@ -591,7 +608,7 @@ int main(void)
 							dataPacketsStorage[dataPacketsRowCounter][i] = dataPacket[i-2];
 						}
 						dataPacketsRowCounter++;
-						if(dataPacketsRowCounter >=10){
+						if(dataPacketsRowCounter >=20){
 							dataPacketsRowCounter = 0;
 						}
 						//----------Store Data packet in internal memory-------//
@@ -603,7 +620,7 @@ int main(void)
 						else {
 							//-------If DNOK is received, repeat requested packet-------//
 							if(BLEHandle.repeatDataPacket){
-								for(i=0;i<10;i++){
+								for(i=0;i<20;i++){
 									tempData16 = dataPacketsStorage[i][0];
 									tempData16<<=8;
 									tempData16 |= (dataPacketsStorage[i][1] & 0x00FF);

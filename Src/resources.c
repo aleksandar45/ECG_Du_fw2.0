@@ -1,4 +1,5 @@
 #include "stm32l4xx_hal.h"
+#include "main.h"
 
 uint16_t crcTable[] = {
             0x0000, 0xC0C1, 0xC181, 0x0140, 0xC301, 0x03C0, 0x0280, 0xC241,
@@ -35,4 +36,4 @@ uint16_t crcTable[] = {
             0x8201, 0x42C0, 0x4380, 0x8341, 0x4100, 0x81C1, 0x8081, 0x4040,
         };
 
-uint8_t dataPacketsStorage[20][131];
+uint8_t dataPacketsStorage[DATA_BUFFER_SIZE][131];

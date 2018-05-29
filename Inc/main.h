@@ -50,13 +50,15 @@
 
 // Defines ------------------------------------------------------------------//
 #define DEBUG_MODE
-#define FLASH_DATA_STORAGE
 #define RN4871_Nucleo_Test_Board
 
 #ifdef RN4871_Nucleo_Test_Board
+	#define DATA_BUFFER_SIZE			980
+	
 	#define MCU_TEST_DATA
 #else
 	#define ECG_Du_v1_Board
+	#define DATA_BUFFER_SIZE			750
 	
 	//#define MCU_TEST_DATA
 	//#define ECG_TEST_DATA
@@ -149,7 +151,7 @@ typedef enum {
 	BLE_WAIT_START_ACQ = 7,		//Wait start acquisition CMD
 	BLE_ACQ_TRANSFERING = 8,	//Transfering ECG data over BLE
 	BLE_ACQ_TRANSFERING_AND_STORING = 9,	//Transfering ECG data over BLE and storing packets in FLASH memory
-	BLE_FLASH_TRANSFERING = 10,	//Transfering FLASH data over BLE (missing packets)
+	BLE_MEMORY_TRANSFERING = 10,	//Transfering memorized data over BLE (missing packets)
 }ProgramStageTypeDef;
 
 // Exported constants --------------------------------------------------------//

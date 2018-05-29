@@ -114,7 +114,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	uint8_t i;
 	if((programStage == BLE_ACQ_TRANSFERING) || (programStage == BLE_ACQ_TRANSFERING_AND_STORING)){
 		//HAL_GPIO_WritePin(GPIOC,GPIO_PIN_6,GPIO_PIN_SET);
-		for(i=0;i<180;i+=3){
+		for(i=0;i<150;i+=3){
 			testData[i]=testCounter>>16;
 			testData[i+1]=testCounter>>8;
 			testData[i+2]=testCounter;
@@ -123,13 +123,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 		if(testCounter>=45000){
 			testCounter = 0;
 		}
-		if(ECG_ERROR!=ECG_WriteFIFOData(&ECGHandle,testData,1,180)){
+		if(ECG_ERROR!=ECG_WriteFIFOData(&ECGHandle,testData,1,150)){
 			//HAL_GPIO_WritePin(GPIOC,GPIO_PIN_6,GPIO_PIN_RESET);
 		}
-		if(ECG_ERROR!=ECG_WriteFIFOData(&ECGHandle,testData,2,180)){
+		if(ECG_ERROR!=ECG_WriteFIFOData(&ECGHandle,testData,2,150)){
 			//HAL_GPIO_WritePin(GPIOC,GPIO_PIN_6,GPIO_PIN_RESET);
 		}
-		if(ECG_ERROR!=ECG_WriteFIFOData(&ECGHandle,testData,3,180)){
+		if(ECG_ERROR!=ECG_WriteFIFOData(&ECGHandle,testData,3,150)){
 			//HAL_GPIO_WritePin(GPIOC,GPIO_PIN_6,GPIO_PIN_RESET);
 		}
 		

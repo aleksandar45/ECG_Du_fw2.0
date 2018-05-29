@@ -181,15 +181,6 @@ void EXTI9_5_IRQHandler(void)
 }
 #endif
 
-/**
-  * @brief  This function handles FLASH interrupt request.
-  * @param  None
-  * @retval None
-  */
-void FLASH_IRQHandler(void)
-{
-	HAL_FLASH_IRQHandler();
-}
 
 /**
   * @brief  This function handles TIM interrupt request.

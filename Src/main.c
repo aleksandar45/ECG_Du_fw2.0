@@ -64,11 +64,13 @@ uint8_t startTIM1;
 //--------Variables for storing BLE data in packet-------//
 extern uint16_t crcTable[];
 extern uint8_t dataPacketsStorage[DATA_BUFFER_SIZE][131];
+extern uint8_t finalDataPaketStorage[129];
 
 uint32_t dataPacketsRowCounter;
 uint32_t dataMemoryIndex;
 uint32_t missRange1, missRange2;
 uint16_t packetNumber;
+uint16_t finalPacketNumber;
 uint16_t packetIndex;
 uint32_t previousData1,previousData2,previousData3;
 uint32_t currentData1,currentData2,currentData3;
@@ -269,8 +271,8 @@ int main(void)
 						BLEHandle.connParamsUpdateCounter = 2;
 					}
 					BLEHandle.connParamsUpdateCounter++;
-					//if((BLEHandle.statusMessage.param1<=12)&&(BLEHandle.statusMessage.param3>=400) && (!BLEHandle.cmdMode) && (BLEHandle.connParamsUpdateCounter >=3)) {
-					if((BLEHandle.statusMessage.param1==12)&&(BLEHandle.statusMessage.param3==512) && (!BLEHandle.cmdMode)) {
+					if((BLEHandle.statusMessage.param1<=12)&&(BLEHandle.statusMessage.param3>=400) && (!BLEHandle.cmdMode)) {
+					//if((BLEHandle.statusMessage.param1==12)&&(BLEHandle.statusMessage.param3==512) && (!BLEHandle.cmdMode)) {
 						//programStage = ECG_INIT;
 						mTimer_TIM1_Start(&mTimHandle,1000);																		
 						programStage = BLE_WAIT_BATTERY_INF;
@@ -346,7 +348,7 @@ int main(void)
 												
 #ifdef RN4871_Nucleo_Test_Board					
 						startCounter++;
-						if((startCounter%4)==0){
+						/*if((startCounter%4)==0){
 							HAL_Delay(400);
 							programStage = BLE_MEMORY_TRANSFERING;		
 							dataMemoryIndex = 0;
@@ -354,11 +356,11 @@ int main(void)
 							missRange2 = 750;
 							dataMemoryIndex = missRange1;							
 						}
-						else{
+						else{*/
 							HAL_Delay(400);
-							programStage = BLE_ACQ_TRANSFERING_AND_STORING;
+							programStage = BLE_ACQ_TRANSFERING;
 							dataPacketsRowCounter = 0;							
-						}
+						//}
 #else																			
 						programStage = BLE_ACQ_TRANSFERING;
 #endif
@@ -366,6 +368,7 @@ int main(void)
 					  startTIM1 = 1;
 						
 						packetNumber = 0;
+						finalPacketNumber = 0;
 						BLEHandle.dataOKWaiting = 0;
 						BLEHandle.repeatDataPacket = 0;
 						BLEHandle.repeatDataPacketCounter = 0;						
@@ -375,24 +378,25 @@ int main(void)
 						
 					}
 					
+				}				
+				else if(BLEHandle.ackOrAppMessage.message==APP_MISS_RANGE){
+					
+					programStage = BLE_MEMORY_TRANSFERING;			
+					missRange1 = BLEHandle.ackOrAppMessage.param1;
+					missRange2 = BLEHandle.ackOrAppMessage.param2;
+					dataMemoryIndex = 0;
+					
+					ECG_Stop_Acquisition(&ECGHandle);
+					startTIM1 = 1;
+					
 				}
-				else if(BLEHandle.ackOrAppMessage.message==APP_START_STR){
+				else if(BLEHandle.ackOrAppMessage.message == APP_END_BLOCK){
 					if(programStage == BLE_ACQ_TRANSFERING){
 						programStage = BLE_ACQ_TRANSFERING_AND_STORING;
-						dataPacketsRowCounter = 0;
 						
 						startTIM1 = 1;
 					}
-				}
-				else if(BLEHandle.ackOrAppMessage.message==APP_MISS_RANGE){
-					
-					programStage = BLE_MEMORY_TRANSFERING;
-					dataPacketsRowCounter = 0;
-					missRange1 = BLEHandle.ackOrAppMessage.param1;
-					missRange2 = BLEHandle.ackOrAppMessage.param2;
-					dataMemoryIndex = missRange1;
-					startTIM1 = 1;
-					
+					finalPacketNumber = BLEHandle.ackOrAppMessage.param1;
 				}
 				else if(BLEHandle.ackOrAppMessage.message==APP_OFF){
 					BLE_EnterCMDMode(&BLEHandle, WAIT_CMD_RESP);
@@ -412,24 +416,36 @@ int main(void)
 			//---------------Send missing packets over BLE---------------//
 			if(programStage == BLE_MEMORY_TRANSFERING){				
 				if(dataMemoryIndex < dataPacketsRowCounter){
-					for(i=0;i<129;i++){
-						dataPacket[i] = dataPacketsStorage[dataMemoryIndex][i+2];						
-					}
-					tempData32 = dataPacket[2];
+					
+					tempData32 = dataPacketsStorage[dataMemoryIndex][4];
 					tempData32<<=8;
-					tempData32 |= dataPacket[3];
-					if(tempData32 != dataMemoryIndex){
-						tempData32 = 0;						
+					tempData32 |= dataPacketsStorage[dataMemoryIndex][5];
+					
+					if((tempData32 >= missRange1) && (tempData32<= missRange2)){
+						for(i=0;i<129;i++){
+							dataPacket[i] = dataPacketsStorage[dataMemoryIndex][i+2];						
+						}
+						if(BLE_ERROR == BLE_SendData(&BLEHandle,dataPacket,129)){
+								programStage = BLE_WAIT_START_ACQ;
+								startTIM1 = 1;	
+						}
+						HAL_Delay(35);
 					}
-					if((dataMemoryIndex >950)||(dataMemoryIndex > missRange2)) {
+					
+					if(tempData32 > missRange2){
+						BLE_SendData(&BLEHandle,finalDataPaketStorage,129);
 						programStage = BLE_WAIT_START_ACQ;
+						startTIM1 = 1;	
 					}
-					if(BLE_ERROR == BLE_SendData(&BLEHandle,dataPacket,129)){
-							programStage = BLE_WAIT_START_ACQ;
-							startTIM1 = 1;	
-					}
-					dataMemoryIndex++;
-					HAL_Delay(35);		
+					
+					//if(tempData32 != dataMemoryIndex){
+					//	tempData32 = 0;						
+					//}
+					//if((dataMemoryIndex >950)||(dataMemoryIndex > missRange2)) {
+					//	programStage = BLE_WAIT_START_ACQ;
+					//}
+					
+					dataMemoryIndex++;							
 				}				
 			}
 			//---------------Send missing packets over BLE---------------//
@@ -510,14 +526,18 @@ int main(void)
 						//----------CRC calculation-----------------//
 						
 						//----------Send Data packet---------------//
-						if(BLE_ERROR == BLE_SendData(&BLEHandle,dataPacket,129)){
-							programStage = BLE_WAIT_CONN;
-							startTIM1 = 1;						
+						//if(((packetNumber >110) && (packetNumber < 130)) || ((packetNumber >810) && (packetNumber < 830))){}
+						//else{
+							
+							if(BLE_ERROR == BLE_SendData(&BLEHandle,dataPacket,129)){
+								programStage = BLE_WAIT_CONN;
+								startTIM1 = 1;						
 #ifdef ECG_Du_v1_Board
-							ECG_Stop_Acquisition(&ECGHandle);
+								ECG_Stop_Acquisition(&ECGHandle);
 #endif						
-							EnterLowEnergyMODE();
-						}
+								EnterLowEnergyMODE();
+							}
+						//}
 						
 						dataPacket[127]=rem>>8; 	
 						dataPacket[128]=rem;
@@ -533,6 +553,11 @@ int main(void)
 							dataPacketsRowCounter++;
 							if(dataPacketsRowCounter >=DATA_BUFFER_SIZE){
 								programStage = BLE_ACQ_TRANSFERING;								
+							}							
+						}
+						if((finalPacketNumber>0) && (packetNumber == finalPacketNumber)){
+							for(i=0;i<129;i++){
+								finalDataPaketStorage[i] = dataPacket[i];
 							}
 						}
 						//----------Store Data packet in internal memory-------//

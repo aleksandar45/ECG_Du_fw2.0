@@ -37,3 +37,5 @@ uint16_t crcTable[] = {
         };
 
 uint8_t dataPacketsStorage[DATA_BUFFER_SIZE][131];
+uint8_t finalDataPaketStorage[129];
+				

@@ -50,7 +50,7 @@
 
 // Defines ------------------------------------------------------------------//
 #define DEBUG_MODE
-#define RN4871_Nucleo_Test_Board
+//#define RN4871_Nucleo_Test_Board
 
 #ifdef RN4871_Nucleo_Test_Board
 	#define DATA_BUFFER_SIZE			980
@@ -58,7 +58,7 @@
 	#define MCU_TEST_DATA
 #else
 	#define ECG_Du_v1_Board
-	#define DATA_BUFFER_SIZE			750
+	#define DATA_BUFFER_SIZE			980
 	
 	//#define MCU_TEST_DATA
 	//#define ECG_TEST_DATA

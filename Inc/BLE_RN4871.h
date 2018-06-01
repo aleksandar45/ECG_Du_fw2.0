@@ -79,13 +79,14 @@ typedef enum {
 	END = 4,			//(END+<CRLF>)	//End Command mode
 	
 	APP_START_ACQ = 5,		//(APP_START_ACQ+<CRLF>)				//App command - start acquisition
-	APP_START_STR = 6,		//(APP_START_STR+<CRLF>)				//App command - start storing in ram memory	
+//	APP_START_STR = 6,		//(APP_START_STR+<CRLF>)				//App command - start storing in ram memory	
 	APP_STOP_ACQ = 7,			//(APP_STOP_ACQ+<CRLF>)					//App command - stop acquisition
-	APP_MISS_RANGE = 8,		//(APP_MISS_RANGE,)
-	APP_STAY = 9,					//(APP_STAY+<CRLF>)							//App command - stay turned on, reset timeout timer
-	APP_OFF = 10,					//(APP_OFF+<CRLF>)							//App command - turn off device
-	APP_DOK = 11,					//(APP_DOK,xxxx+<CRLF>)					//App command - data packet received correctly, parameter is packetNumber(hex in ascii) 
-	APP_DNOK = 12,				//(APP_DNOK,xxxx+<CRLF>)				//App command - data packet not received correctly, parameter is packetNumber(hex in ascii)
+	APP_MISS_RANGE = 8,		//(APP_MISS_RANGE,)							//App command - missing blocks range
+	APP_END_BLOCK = 9,		//(APP_END_BLOCK,)							//App command - final block of session
+	APP_STAY = 10,					//(APP_STAY+<CRLF>)						//App command - stay turned on, reset timeout timer
+	APP_OFF = 11,					//(APP_OFF+<CRLF>)							//App command - turn off device
+	APP_DOK = 12,					//(APP_DOK,xxxx+<CRLF>)					//App command - data packet received correctly, parameter is packetNumber(hex in ascii) 
+	APP_DNOK = 13,				//(APP_DNOK,xxxx+<CRLF>)				//App command - data packet not received correctly, parameter is packetNumber(hex in ascii)
 }RN4871orApp_RespCMDTypeDef;
 
 typedef struct{

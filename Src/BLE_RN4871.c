@@ -577,8 +577,18 @@ RN4871_UARTStatusTypeDef BLE_ParseAckOrAppMessage(BLE_TypeDef* BLEHandle, uint8_
 			BLEHandle->ackOrAppMessage.message = APP_START_ACQ;
 			BLEHandle->ackOrAppMessage.messageUpdated = 1;
 		}
+		else if(mByteCmp(BLEHandle->uartParseBuffer,"APP_START_STR\r\n",13)==0){
+			BLEHandle->ackOrAppMessage.message = APP_START_STR;
+			BLEHandle->ackOrAppMessage.messageUpdated = 1;
+		}
 		else if(mByteCmp(BLEHandle->uartParseBuffer,"APP_STOP_ACQ\r\n",12)==0){
 			BLEHandle->ackOrAppMessage.message = APP_STOP_ACQ;
+			BLEHandle->ackOrAppMessage.messageUpdated = 1;
+		}
+		else if(mByteCmp(BLEHandle->uartParseBuffer,"APP_MISS_RANGE,\r\n",15)==0){
+			BLEHandle->ackOrAppMessage.message = APP_MISS_RANGE;
+			BLEHandle->ackOrAppMessage.param1 =  hex2int(BLEHandle->uartParseBuffer + 15, 4);				
+			BLEHandle->ackOrAppMessage.param2 =  hex2int(BLEHandle->uartParseBuffer + 19, 4);				
 			BLEHandle->ackOrAppMessage.messageUpdated = 1;
 		}
 		else if(mByteCmp(BLEHandle->uartParseBuffer,"APP_OFF\r\n",7)==0){

@@ -67,6 +67,7 @@ extern uint8_t dataPacketsStorage[DATA_BUFFER_SIZE][131];
 
 uint32_t dataPacketsRowCounter;
 uint32_t dataMemoryIndex;
+uint32_t missRange1, missRange2;
 uint16_t packetNumber;
 uint16_t packetIndex;
 uint32_t previousData1,previousData2,previousData3;
@@ -333,9 +334,7 @@ int main(void)
 						programStage = BLE_WAIT_START_ACQ;
 						startTIM1 = 1;	
 						
-//#ifdef ECG_Du_v1_Board
 						ECG_Stop_Acquisition(&ECGHandle);
-//#endif
 						
 						EnterLowEnergyMODE();
 					}
@@ -348,13 +347,17 @@ int main(void)
 #ifdef RN4871_Nucleo_Test_Board					
 						startCounter++;
 						if((startCounter%4)==0){
+							HAL_Delay(400);
 							programStage = BLE_MEMORY_TRANSFERING;		
 							dataMemoryIndex = 0;
-							HAL_Delay(200);
+							missRange1 = 0;
+							missRange2 = 750;
+							dataMemoryIndex = missRange1;							
 						}
 						else{
+							HAL_Delay(400);
 							programStage = BLE_ACQ_TRANSFERING_AND_STORING;
-							dataPacketsRowCounter = 0;
+							dataPacketsRowCounter = 0;							
 						}
 #else																			
 						programStage = BLE_ACQ_TRANSFERING;
@@ -367,11 +370,28 @@ int main(void)
 						BLEHandle.repeatDataPacket = 0;
 						BLEHandle.repeatDataPacketCounter = 0;						
 						testCounter = 0;
+
+						ECG_Start_Acquisition(&ECGHandle);			
 						
-//#ifdef ECG_Du_v1_Board
-						ECG_Start_Acquisition(&ECGHandle);
-//#endif							
 					}
+					
+				}
+				else if(BLEHandle.ackOrAppMessage.message==APP_START_STR){
+					if(programStage == BLE_ACQ_TRANSFERING){
+						programStage = BLE_ACQ_TRANSFERING_AND_STORING;
+						dataPacketsRowCounter = 0;
+						
+						startTIM1 = 1;
+					}
+				}
+				else if(BLEHandle.ackOrAppMessage.message==APP_MISS_RANGE){
+					
+					programStage = BLE_MEMORY_TRANSFERING;
+					dataPacketsRowCounter = 0;
+					missRange1 = BLEHandle.ackOrAppMessage.param1;
+					missRange2 = BLEHandle.ackOrAppMessage.param2;
+					dataMemoryIndex = missRange1;
+					startTIM1 = 1;
 					
 				}
 				else if(BLEHandle.ackOrAppMessage.message==APP_OFF){
@@ -399,10 +419,9 @@ int main(void)
 					tempData32<<=8;
 					tempData32 |= dataPacket[3];
 					if(tempData32 != dataMemoryIndex){
-						tempData32 = 0;
-						programStage = BLE_WAIT_START_ACQ;
+						tempData32 = 0;						
 					}
-					if(dataMemoryIndex >950){
+					if((dataMemoryIndex >950)||(dataMemoryIndex > missRange2)) {
 						programStage = BLE_WAIT_START_ACQ;
 					}
 					if(BLE_ERROR == BLE_SendData(&BLEHandle,dataPacket,129)){

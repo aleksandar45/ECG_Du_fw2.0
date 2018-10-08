@@ -150,18 +150,50 @@
         <Bp>
           <Number>0</Number>
           <Type>0</Type>
-          <LineNumber>52</LineNumber>
+          <LineNumber>29</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134220370</Address>
+          <Address>134219090</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
           <SizeOfObject>0</SizeOfObject>
           <BreakByAccess>0</BreakByAccess>
           <BreakIfRCount>1</BreakIfRCount>
+          <Filename>.\Src\ECG_ADS1294.c</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression>\\iCardiologist\Src/ECG_ADS1294.c\29</Expression>
+        </Bp>
+        <Bp>
+          <Number>1</Number>
+          <Type>0</Type>
+          <LineNumber>240</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>134225098</Address>
+          <ByteObject>0</ByteObject>
+          <HtxType>0</HtxType>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>1</BreakIfRCount>
+          <Filename>.\Src\stm32l4xx_hal_msp.c</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression>\\iCardiologist\Src/stm32l4xx_hal_msp.c\240</Expression>
+        </Bp>
+        <Bp>
+          <Number>2</Number>
+          <Type>0</Type>
+          <LineNumber>52</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>0</Address>
+          <ByteObject>0</ByteObject>
+          <HtxType>0</HtxType>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>0</BreakIfRCount>
           <Filename>.\Src\BLE_RN4871.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\iCardiologist\Src/BLE_RN4871.c\52</Expression>
+          <Expression></Expression>
         </Bp>
       </Breakpoint>
       <WatchWindow1>
@@ -179,6 +211,11 @@
           <count>2</count>
           <WinNumber>1</WinNumber>
           <ItemText>BLEHandle</ItemText>
+        </Ww>
+        <Ww>
+          <count>3</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>ECGHandle</ItemText>
         </Ww>
       </WatchWindow1>
       <Tracepoint>

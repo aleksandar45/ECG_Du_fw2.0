@@ -63,10 +63,14 @@ uint8_t startTIM1;
 
 //--------Variables for storing BLE data in packet-------//
 extern uint16_t crcTable[];
-extern uint8_t dataPacketsStorage[10][131];
+extern uint8_t dataPacketsStorage[DATA_BUFFER_SIZE][131];
+extern uint8_t finalDataPaketStorage[129];
 
-uint8_t dataPacketsRowCounter;
+uint32_t dataPacketsRowCounter;
+uint32_t dataMemoryIndex;
+uint32_t missRange1, missRange2;
 uint16_t packetNumber;
+uint16_t finalPacketNumber;
 uint16_t packetIndex;
 uint32_t previousData1,previousData2,previousData3;
 uint32_t currentData1,currentData2,currentData3;
@@ -82,6 +86,7 @@ uint8_t batteryPacket[10] = "BAT:000\r\n";
 //--------Test variables-----//
 uint8_t testData[150];
 int32_t testCounter=0;
+uint8_t startCounter = 0;
 uint8_t tempData8;
 uint16_t tempData16;
 uint32_t tempData32;
@@ -101,7 +106,8 @@ int main(void)
 
   HAL_Init();
 	
-  SystemClock_Config();	
+  SystemClock_Config();		
+		
 	
 	__HAL_RCC_PWR_CLK_ENABLE();
 	 // Check and Clear the Wakeup flag 
@@ -157,7 +163,16 @@ int main(void)
 #endif
 			startTIM1 = 0;
 		}
-		if((programStage == BLE_ACQ_TRANSFERING) && (startTIM1)){
+		if(((programStage == BLE_ACQ_TRANSFERING)|| (programStage==BLE_ACQ_TRANSFERING_AND_STORING)) && (startTIM1)){
+			mTimer_TIM1_Start(&mTimHandle,50000);
+#ifdef DEBUG_MODE
+			if(!BATTHandle.lowLevelBattery){
+				mTimer_LBlinkStatus_Start(&mTimHandle,300,0);
+			}
+#endif
+			startTIM1 = 0;
+		}
+		if((programStage == BLE_MEMORY_TRANSFERING) && (startTIM1)){
 			mTimer_TIM1_Start(&mTimHandle,50000);
 #ifdef DEBUG_MODE
 			if(!BATTHandle.lowLevelBattery){
@@ -221,7 +236,7 @@ int main(void)
 			}	
 		}
 		else if((BLEHandle.connectionStatus==CONNECTED) && (HAL_GPIO_ReadPin(BT_CFG2_PORT,BT_CFG2_PIN) == GPIO_PIN_RESET)){
-			if(programStage == BLE_ACQ_TRANSFERING){
+			if((programStage == BLE_ACQ_TRANSFERING)||(programStage==BLE_ACQ_TRANSFERING_AND_STORING)){
 #ifdef ECG_Du_v1_Board
 					ECG_Stop_Acquisition(&ECGHandle);
 #endif
@@ -256,8 +271,8 @@ int main(void)
 						BLEHandle.connParamsUpdateCounter = 2;
 					}
 					BLEHandle.connParamsUpdateCounter++;
-					//if((BLEHandle.statusMessage.param1<=12)&&(BLEHandle.statusMessage.param3>=400) && (!BLEHandle.cmdMode) && (BLEHandle.connParamsUpdateCounter >=3)) {
-					if((BLEHandle.statusMessage.param1==12)&&(BLEHandle.statusMessage.param3==512) && (!BLEHandle.cmdMode)) {
+					if((BLEHandle.statusMessage.param1<=12)&&(BLEHandle.statusMessage.param3>=400) && (!BLEHandle.cmdMode)) {
+					//if((BLEHandle.statusMessage.param1==12)&&(BLEHandle.statusMessage.param3==512) && (!BLEHandle.cmdMode)) {
 						//programStage = ECG_INIT;
 						mTimer_TIM1_Start(&mTimHandle,1000);																		
 						programStage = BLE_WAIT_BATTERY_INF;
@@ -268,12 +283,12 @@ int main(void)
 			}
 			else if(BLEHandle.statusMessage.message == STREAM_OPEN){
 				if((HAL_GPIO_ReadPin(BT_CFG1_PORT,BT_CFG1_PIN) == GPIO_PIN_RESET) && (HAL_GPIO_ReadPin(BT_CFG2_PORT,BT_CFG2_PIN) == GPIO_PIN_SET)){
-					BLEHandle.cmdMode = 0;	
+					BLEHandle.cmdMode = 0;						
 				}								
 			}
 			else if(BLEHandle.statusMessage.message == DISCONNECT){
 				if(BLEHandle.connectionStatus == CONNECTED){
-					if(programStage == BLE_ACQ_TRANSFERING){
+					if((programStage == BLE_ACQ_TRANSFERING)||(programStage==BLE_ACQ_TRANSFERING_AND_STORING)){
 #ifdef ECG_Du_v1_Board
 						ECG_Stop_Acquisition(&ECGHandle);
 #endif
@@ -297,8 +312,8 @@ int main(void)
 			//--------Check if App command message is received---------//
 			if(BLEHandle.ackOrAppMessage.messageUpdated){
 				if(BLEHandle.ackOrAppMessage.message==APP_DOK){
-					if(programStage == BLE_ACQ_TRANSFERING){
-						if(BLEHandle.dataOKRespEnabled){
+					if((programStage == BLE_ACQ_TRANSFERING)||(programStage==BLE_ACQ_TRANSFERING_AND_STORING)){
+						if(BLEHandle.dataOKRespEnabled){												//not used
 							if(BLEHandle.ackOrAppMessage.param1 == packetNumber){						
 								BLEHandle.dataOKWaiting=0;
 								BLEHandle.repeatDataPacketCounter = 0;
@@ -311,40 +326,77 @@ int main(void)
 					}
 				}
 				else if(BLEHandle.ackOrAppMessage.message==APP_DNOK){
-					if(programStage == BLE_ACQ_TRANSFERING){
+					if((programStage == BLE_ACQ_TRANSFERING)||(programStage==BLE_ACQ_TRANSFERING_AND_STORING)){
 						BLEHandle.repeatDataPacket = 1;
 						BLEHandle.repeatDataPacketNumber = BLEHandle.ackOrAppMessage.param1;
 					}
 				}
 				else if(BLEHandle.ackOrAppMessage.message==APP_STOP_ACQ){
-					if(programStage == BLE_ACQ_TRANSFERING){
+					if((programStage == BLE_ACQ_TRANSFERING)||(programStage==BLE_ACQ_TRANSFERING_AND_STORING)||(programStage==BLE_MEMORY_TRANSFERING)){
 						programStage = BLE_WAIT_START_ACQ;
-						startTIM1 = 1;
+						startTIM1 = 1;	
 						
-#ifdef ECG_Du_v1_Board
 						ECG_Stop_Acquisition(&ECGHandle);
-#endif
 						
 						EnterLowEnergyMODE();
 					}
 				}
 				else if(BLEHandle.ackOrAppMessage.message==APP_START_ACQ){
 					if(programStage == BLE_WAIT_START_ACQ){
+
+						EnterHighEnergyMODE();
+												
+#ifdef RN4871_Nucleo_Test_Board					
+						startCounter++;
+						/*if((startCounter%4)==0){
+							HAL_Delay(400);
+							programStage = BLE_MEMORY_TRANSFERING;		
+							dataMemoryIndex = 0;
+							missRange1 = 0;
+							missRange2 = 750;
+							dataMemoryIndex = missRange1;							
+						}
+						else{*/
+							HAL_Delay(400);
+							programStage = BLE_ACQ_TRANSFERING;
+							dataPacketsRowCounter = 0;							
+						//}
+#else																			
 						programStage = BLE_ACQ_TRANSFERING;
-					  startTIM1 = 1;
-						EnterHighEnergyMODE();		
+#endif
 						
-#ifdef ECG_Du_v1_Board
-						ECG_Start_Acquisition(&ECGHandle);
-#endif	
+					  startTIM1 = 1;
+						
 						packetNumber = 0;
+						finalPacketNumber = 0;
 						BLEHandle.dataOKWaiting = 0;
 						BLEHandle.repeatDataPacket = 0;
-						BLEHandle.repeatDataPacketCounter = 0;
-						dataPacketsRowCounter = 0;
+						BLEHandle.repeatDataPacketCounter = 0;						
 						testCounter = 0;
+
+						ECG_Start_Acquisition(&ECGHandle);			
+						
 					}
 					
+				}				
+				else if(BLEHandle.ackOrAppMessage.message==APP_MISS_RANGE){
+					
+					programStage = BLE_MEMORY_TRANSFERING;			
+					missRange1 = BLEHandle.ackOrAppMessage.param1;
+					missRange2 = BLEHandle.ackOrAppMessage.param2;
+					dataMemoryIndex = 0;
+					
+					ECG_Stop_Acquisition(&ECGHandle);
+					startTIM1 = 1;
+					
+				}
+				else if(BLEHandle.ackOrAppMessage.message == APP_END_BLOCK){
+					if(programStage == BLE_ACQ_TRANSFERING){
+						programStage = BLE_ACQ_TRANSFERING_AND_STORING;
+						
+						startTIM1 = 1;
+					}
+					finalPacketNumber = BLEHandle.ackOrAppMessage.param1;
 				}
 				else if(BLEHandle.ackOrAppMessage.message==APP_OFF){
 					BLE_EnterCMDMode(&BLEHandle, WAIT_CMD_RESP);
@@ -360,9 +412,46 @@ int main(void)
 				BLEHandle.ackOrAppMessage.messageUpdated = 0;
 			}
 			//--------Check if App command message is received---------//
-				
+			
+			//---------------Send missing packets over BLE---------------//
+			if(programStage == BLE_MEMORY_TRANSFERING){				
+				if(dataMemoryIndex < dataPacketsRowCounter){
+					
+					tempData32 = dataPacketsStorage[dataMemoryIndex][4];
+					tempData32<<=8;
+					tempData32 |= dataPacketsStorage[dataMemoryIndex][5];
+					
+					if((tempData32 >= missRange1) && (tempData32<= missRange2)){
+						for(i=0;i<129;i++){
+							dataPacket[i] = dataPacketsStorage[dataMemoryIndex][i+2];						
+						}
+						if(BLE_ERROR == BLE_SendData(&BLEHandle,dataPacket,129)){
+								programStage = BLE_WAIT_START_ACQ;
+								startTIM1 = 1;	
+						}
+						HAL_Delay(35);
+					}
+					
+					if(tempData32 > missRange2){
+						BLE_SendData(&BLEHandle,finalDataPaketStorage,129);
+						programStage = BLE_WAIT_START_ACQ;
+						startTIM1 = 1;	
+					}
+					
+					//if(tempData32 != dataMemoryIndex){
+					//	tempData32 = 0;						
+					//}
+					//if((dataMemoryIndex >950)||(dataMemoryIndex > missRange2)) {
+					//	programStage = BLE_WAIT_START_ACQ;
+					//}
+					
+					dataMemoryIndex++;							
+				}				
+			}
+			//---------------Send missing packets over BLE---------------//
+			
 			//--------Prepare BLE transfering packet---------//
-			if(programStage == BLE_ACQ_TRANSFERING){					
+			if((programStage == BLE_ACQ_TRANSFERING)||(programStage==BLE_ACQ_TRANSFERING_AND_STORING)){					
 				if(!BLEHandle.dataOKWaiting){
 					if(ECGHandle.dataFIFOAvailable > 60){
 						
@@ -437,42 +526,53 @@ int main(void)
 						//----------CRC calculation-----------------//
 						
 						//----------Send Data packet---------------//
-						if(BLE_ERROR == BLE_SendData(&BLEHandle,dataPacket,129)){
-							programStage = BLE_WAIT_CONN;
-							startTIM1 = 1;						
+						//if(((packetNumber >110) && (packetNumber < 130)) || ((packetNumber >810) && (packetNumber < 830))){}
+						//else{
+							
+							if(BLE_ERROR == BLE_SendData(&BLEHandle,dataPacket,129)){
+								programStage = BLE_WAIT_CONN;
+								startTIM1 = 1;						
 #ifdef ECG_Du_v1_Board
-							ECG_Stop_Acquisition(&ECGHandle);
+								ECG_Stop_Acquisition(&ECGHandle);
 #endif						
-							EnterLowEnergyMODE();
-						}
+								EnterLowEnergyMODE();
+							}
+						//}
 						
 						dataPacket[127]=rem>>8; 	
 						dataPacket[128]=rem;
 						//----------Send Data packet---------------//
 						
 						//----------Store Data packet in internal memory-------//
-						dataPacketsStorage[dataPacketsRowCounter][0]=packetNumber>>8;
-						dataPacketsStorage[dataPacketsRowCounter][1]=packetNumber;
-						for(i=2;i<131;i++){
-							dataPacketsStorage[dataPacketsRowCounter][i] = dataPacket[i-2];
+						if(programStage==BLE_ACQ_TRANSFERING_AND_STORING){						
+							dataPacketsStorage[dataPacketsRowCounter][0]=packetNumber>>8;
+							dataPacketsStorage[dataPacketsRowCounter][1]=packetNumber;
+							for(i=2;i<131;i++){
+								dataPacketsStorage[dataPacketsRowCounter][i] = dataPacket[i-2];
+							}
+							dataPacketsRowCounter++;
+							if(dataPacketsRowCounter >=DATA_BUFFER_SIZE){
+								programStage = BLE_ACQ_TRANSFERING;								
+							}							
 						}
-						dataPacketsRowCounter++;
-						if(dataPacketsRowCounter >=10){
-							dataPacketsRowCounter = 0;
+						if((finalPacketNumber>0) && (packetNumber == finalPacketNumber)){
+							for(i=0;i<129;i++){
+								finalDataPaketStorage[i] = dataPacket[i];
+							}
 						}
 						//----------Store Data packet in internal memory-------//
 						
 						
-						if(BLEHandle.dataOKRespEnabled){
-							BLEHandle.dataOKWaiting=1;
+						if(BLEHandle.dataOKRespEnabled){								//not used				
+							BLEHandle.dataOKWaiting=1;										
 						}
 						else {
 							//-------If DNOK is received, repeat requested packet-------//
 							if(BLEHandle.repeatDataPacket){
-								for(i=0;i<10;i++){
-									tempData16 = dataPacketsStorage[i][0];
+								for(i=0;i<20;i++){
+									tempData16 = dataPacketsStorage[dataPacketsRowCounter - 1 - i][0];
 									tempData16<<=8;
-									tempData16 |= (dataPacketsStorage[i][1] & 0x00FF);
+									tempData16 |= (dataPacketsStorage[dataPacketsRowCounter -1 - i][1] & 0x00FF);
 									if(tempData16 ==  BLEHandle.repeatDataPacketNumber){
 										if(BLE_ERROR == BLE_SendData(&BLEHandle,&dataPacketsStorage[i][2],129)){
 											programStage = BLE_WAIT_CONN;
@@ -481,8 +581,7 @@ int main(void)
 											ECG_Stop_Acquisition(&ECGHandle);
 #endif						
 											EnterLowEnergyMODE();
-										}
-										;
+										}										
 										HAL_Delay(2);
 										break;
 									}
@@ -511,7 +610,7 @@ int main(void)
 						//BLE_SendData(&BLEHandle,errorPacket,129);  //transmit error message
 					}
 				}
-				else{
+				else{																						//not used
 					if(BLEHandle.repeatDataPacket){
 						BLE_SendData(&BLEHandle,dataPacket,129);							
 						BLEHandle.repeatDataPacketCounter++;

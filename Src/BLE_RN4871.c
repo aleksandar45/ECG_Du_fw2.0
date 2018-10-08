@@ -151,6 +151,12 @@ void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle){
 	BLEHandle->uartBaudRate = 115200;
 	BLEHandle->uartHWControl = UART_HWCONTROL_NONE;
 #endif
+	BLEHandle->uartBufferForward = 1;
+	BLEHandle->uartDataAvailable = 0;
+	BLEHandle->uartBufferReadPointer = BLEHandle->uartReceiveBuffer;
+	uartHandle->RxState =HAL_UART_STATE_READY;
+	mUART_Config(uartHandle,BLEHandle->uartBaudRate,BLEHandle->uartHWControl);
+	mUART_Receive_IT(uartHandle,BLEHandle->uartReceiveBuffer,200);
 	
 	HAL_GPIO_WritePin(BT_RESET_PORT,BT_RESET_PIN,GPIO_PIN_RESET);				//Hardware Reset					
 	HAL_Delay(1);
@@ -571,8 +577,23 @@ RN4871_UARTStatusTypeDef BLE_ParseAckOrAppMessage(BLE_TypeDef* BLEHandle, uint8_
 			BLEHandle->ackOrAppMessage.message = APP_START_ACQ;
 			BLEHandle->ackOrAppMessage.messageUpdated = 1;
 		}
+		/*else if(mByteCmp(BLEHandle->uartParseBuffer,"APP_START_STR\r\n",13)==0){
+			BLEHandle->ackOrAppMessage.message = APP_START_STR;
+			BLEHandle->ackOrAppMessage.messageUpdated = 1;
+		}*/
 		else if(mByteCmp(BLEHandle->uartParseBuffer,"APP_STOP_ACQ\r\n",12)==0){
 			BLEHandle->ackOrAppMessage.message = APP_STOP_ACQ;
+			BLEHandle->ackOrAppMessage.messageUpdated = 1;
+		}
+		else if(mByteCmp(BLEHandle->uartParseBuffer,"APP_END_BLOCK,",14)==0){
+			BLEHandle->ackOrAppMessage.message = APP_END_BLOCK;
+			BLEHandle->ackOrAppMessage.param1 =  hex2int(BLEHandle->uartParseBuffer + 14, 4);				
+			BLEHandle->ackOrAppMessage.messageUpdated = 1;
+		}
+		else if(mByteCmp(BLEHandle->uartParseBuffer,"APP_MISS_RANGE,",15)==0){
+			BLEHandle->ackOrAppMessage.message = APP_MISS_RANGE;
+			BLEHandle->ackOrAppMessage.param1 =  hex2int(BLEHandle->uartParseBuffer + 15, 4);				
+			BLEHandle->ackOrAppMessage.param2 =  hex2int(BLEHandle->uartParseBuffer + 20, 4);				
 			BLEHandle->ackOrAppMessage.messageUpdated = 1;
 		}
 		else if(mByteCmp(BLEHandle->uartParseBuffer,"APP_OFF\r\n",7)==0){

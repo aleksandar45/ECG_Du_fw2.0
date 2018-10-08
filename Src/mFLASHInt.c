@@ -1,7 +1,6 @@
 #include "mFlashInt.h"
 
-uint32_t StartAddress;
-uint32_t EndAddress;
+__IO uint8_t flashBusy = 0;
 
 void FLASH_Erase(uint32_t StartAddr, uint32_t EndAddr){
 	uint32_t FirstPage = 0, NbOfPages = 0;
@@ -9,54 +8,41 @@ void FLASH_Erase(uint32_t StartAddr, uint32_t EndAddr){
 	__IO uint32_t data32 = 0 , MemoryProgramStatus = 0;
 	FLASH_EraseInitTypeDef EraseInitStruct;
 	
-	HAL_FLASH_Unlock();
-	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_OPTVERR);	
+	HAL_NVIC_DisableIRQ(FLASH_IRQn);
+	HAL_FLASH_Unlock();	
+	//__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_OPTVERR);	
 	
-	FirstPage = GetPage(StartAddress);
-	NbOfPages = GetPage(EndAddress) - FirstPage + 1;
+	FirstPage = GetPage(StartAddr);
+	NbOfPages = GetPage(EndAddr) - FirstPage + 1;
 	
 	EraseInitStruct.TypeErase   = FLASH_TYPEERASE_PAGES;
   EraseInitStruct.Banks       = FLASH_BANK_1;
   EraseInitStruct.Page        = FirstPage;
   EraseInitStruct.NbPages     = NbOfPages;
+
+	uint32_t tickstart = HAL_GetTick();
+    
+  while(__HAL_FLASH_GET_FLAG(FLASH_FLAG_BSY)) 
+  { 
+    if(FLASH_TIMEOUT_VALUE != HAL_MAX_DELAY)
+    {
+      if((HAL_GetTick() - tickstart) >= FLASH_TIMEOUT_VALUE)
+      {
+        Error_Handler();
+      }
+    } 
+  }
+	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
+		
   if(HAL_FLASHEx_Erase(&EraseInitStruct, &PAGEError) != HAL_OK)
   { 
-    /*
-      FLASH_ErrorTypeDef errorcode = HAL_FLASH_GetError();
-    */
-    //Error_Handler();
+    
+    //FLASH_ErrorTypeDef errorcode = HAL_FLASH_GetError();
+   
+    Error_Handler();
   }
 	HAL_FLASH_Lock();
-}
-
-void FLASH_Program32(uint32_t offsetAddress,uint64_t data){
-	
-	uint32_t Address = StartAddress + offsetAddress;
-
-	HAL_FLASH_Unlock();
-  if (Address < EndAddress)
-  {
-    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, Address, data) == HAL_OK)
-    {
-      Address = Address + 8;
-    }
-    else
-    { 
-      /* Error occurred while writing data in Flash memory. 
-         User can add here some code to deal with this error */
-      /*
-        FLASH_ErrorTypeDef errorcode = HAL_FLASH_GetError();
-      */
-      Error_Handler();
-    }
-  }
-	
-	HAL_FLASH_Lock();
-}
-uint32_t FLASH_Read32(uint32_t offsetAddress){
-	__IO uint32_t data32;
-	data32 = *(__IO uint32_t*)(StartAddress + offsetAddress);
-	return data32;
+	HAL_NVIC_EnableIRQ(FLASH_IRQn);
 }
 uint32_t GetPage(uint32_t Addr){
   uint32_t page = 0;
@@ -73,4 +59,8 @@ uint32_t GetPage(uint32_t Addr){
   }
   
   return page;
+}
+
+void  HAL_FLASH_EndOfOperationCallback(uint32_t ReturnValue){
+	flashBusy = 0;
 }

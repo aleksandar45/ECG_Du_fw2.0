@@ -47,6 +47,7 @@
 #include "BLE_RN4871.h"
 #include "ECG_ADS1294.h"
 #include "BATT.h"
+#include "MPU6050.h"
 
 // Defines ------------------------------------------------------------------//
 #define DEBUG_MODE

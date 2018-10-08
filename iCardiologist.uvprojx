@@ -528,6 +528,16 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_adc_ex.c</FilePath>
             </File>
+            <File>
+              <FileName>stm32l4xx_hal_i2c.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_i2c.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32l4xx_hal_i2c_ex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_i2c_ex.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -597,6 +607,11 @@
               <FileName>BATT.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Src\BATT.c</FilePath>
+            </File>
+            <File>
+              <FileName>MPU6050.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Src\MPU6050.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -677,6 +692,11 @@
               <FileName>mADC.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Src\mADC.c</FilePath>
+            </File>
+            <File>
+              <FileName>mI2C.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Src\mI2C.c</FilePath>
             </File>
           </Files>
         </Group>

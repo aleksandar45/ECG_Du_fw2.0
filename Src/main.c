@@ -57,6 +57,7 @@ mTimerHandler_TypeDef  mTimHandle;
 BLE_TypeDef	BLEHandle;
 ECG_TypeDef ECGHandle;
 BATT_TypeDef BATTHandle;
+GYACC_TypeDef GYACCHandle;
 
 ProgramStageTypeDef programStage;
 uint8_t startTIM1;
@@ -81,6 +82,7 @@ uint8_t ch2MSB,ch2CSB,ch2LSB;
 uint8_t ch3MSB,ch3CSB,ch3LSB;
 uint8_t dataPacket[130] = "ANssD11D12D13S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2CC";
 uint8_t batteryPacket[10] = "BAT:000\r\n";
+uint8_t accPacket[16] = "ACC:000111222\r\n";
 //--------Variables for storing BLE data in packet-------//
 
 //--------Test variables-----//
@@ -452,6 +454,19 @@ int main(void)
 			
 			//--------Prepare BLE transfering packet---------//
 			if((programStage == BLE_ACQ_TRANSFERING)||(programStage==BLE_ACQ_TRANSFERING_AND_STORING)){					
+				if(GYACCHandle.newDataAvailable){
+						if(BLE_ERROR == BLE_SendData(&BLEHandle,accPacket,15)){
+							programStage = BLE_WAIT_CONN;
+							startTIM1 = 1;						
+#ifdef ECG_Du_v1_Board
+							ECG_Stop_Acquisition(&ECGHandle);
+#endif						
+							EnterLowEnergyMODE();
+						}
+						else {
+							GYACCHandle.newDataAvailable = 0;
+						}
+				}
 				if(!BLEHandle.dataOKWaiting){
 					if(ECGHandle.dataFIFOAvailable > 60){
 						

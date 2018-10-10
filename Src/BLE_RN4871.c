@@ -604,6 +604,10 @@ RN4871_UARTStatusTypeDef BLE_ParseAckOrAppMessage(BLE_TypeDef* BLEHandle, uint8_
 			BLEHandle->ackOrAppMessage.message = APP_STAY;
 			BLEHandle->ackOrAppMessage.messageUpdated = 1;
 		}
+		else if(mByteCmp(BLEHandle->uartParseBuffer,"APP_DFU\r\n",7)==0){
+			BLEHandle->ackOrAppMessage.message = APP_DFU;
+			BLEHandle->ackOrAppMessage.messageUpdated = 1;
+		}
 	}
 	else if(BLEHandle->uartParseBuffer[0] == 'C'){
 		if(mByteCmp(BLEHandle->uartParseBuffer,"CMD\r\n#,",5)==0){
@@ -794,9 +798,9 @@ void value2DecimalString(char* outputString, uint8_t value){
 	outputString[0] = a + 48;
 	outputString[1] = b + 48;
 	outputString[2] = c + 48;
-	outputString[3] = 0x0D;
+	/*outputString[3] = 0x0D;
 	outputString[4] = 0x0A;
-	outputString[5] = 0x00;
+	outputString[5] = 0x00;*/
 }
 uint32_t hex2int(uint8_t* charArray, uint8_t size){
 	uint8_t i, character;

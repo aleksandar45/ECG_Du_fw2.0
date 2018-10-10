@@ -87,6 +87,7 @@ typedef enum {
 	APP_OFF = 11,					//(APP_OFF+<CRLF>)							//App command - turn off device
 	APP_DOK = 12,					//(APP_DOK,xxxx+<CRLF>)					//App command - data packet received correctly, parameter is packetNumber(hex in ascii) 
 	APP_DNOK = 13,				//(APP_DNOK,xxxx+<CRLF>)				//App command - data packet not received correctly, parameter is packetNumber(hex in ascii)
+	APP_DFU = 14,					//(APP_DFU<CRLF>)								//App command - device firmware upgrade
 }RN4871orApp_RespCMDTypeDef;
 
 typedef struct{

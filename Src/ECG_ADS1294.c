@@ -174,7 +174,7 @@ void ECG_Start_Acquisition(ECG_TypeDef* ECGHandle){
 	ECGHandle->forwardFIFO = 1;
 	ECGHandle->ecgStatus = ECG_OK;
 	
-	Send_Comand_ECG(ECGHandle->spiHandle,ECG_WAKEUP_CMD);			// STANDBY command
+	Send_Comand_ECG(ECGHandle->spiHandle,ECG_WAKEUP_CMD);			// WAKEUP command
 	HAL_Delay(15);	
 	Send_Comand_ECG(ECGHandle->spiHandle,ECG_START_CMD);			// START command
 	Send_Comand_ECG(ECGHandle->spiHandle,ECG_RDATAC_CMD);			// RDATAC command

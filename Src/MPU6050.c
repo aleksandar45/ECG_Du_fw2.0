@@ -1,4 +1,5 @@
 #include "MPU6050.h"
+#include "BLE_RN4871.h"
 #include <math.h>
 
 extern GYACC_TypeDef GYACCHandle;
@@ -187,6 +188,7 @@ void GYACC_Start_Acquisition(GYACC_TypeDef* GYACCHandle){
 		GYACCHandle->ErrorNumber = GYACC_INIT1_ERROR;							
 	}
 	
+	GYACCHandle->angleIndex = 0;
 	GYACCHandle->dataReadyTask = 0;
 	GYACCHandle->newDataAvailable = 0;
 	GYACCHandle->acqStarted = 1;
@@ -194,28 +196,41 @@ void GYACC_Start_Acquisition(GYACC_TypeDef* GYACCHandle){
 }
 void GYACC_Stop_Acquisition(GYACC_TypeDef* GYACCHandle){
 	GYACCHandle->acqStarted = 0;
-	
+		
 }
-void GYACC_ReadDataFromSensor(GYACC_TypeDef* GYACCHandle,uint8_t* dataBuffer){
+void GYACC_ReadDataFromSensor(GYACC_TypeDef* GYACCHandle){
 	uint8_t I2CRx[6] ;
-	uint8_t i;
+	uint16_t x,y,z;
 	double xD,yD,zD;
-	double roll, pitch;
+	double rollD, pitchD;
 	
 	if(HAL_OK==HAL_I2C_Mem_Read(GYACCHandle->i2cHandle, 0xD0, MPU6050_RA_INT_STATUS, I2C_MEMADD_SIZE_8BIT, I2CRx, 1, 1)) {					
 		if((I2CRx[0]& 0x01)==0x01) {	
 			if(HAL_OK==HAL_I2C_Mem_Read(GYACCHandle->i2cHandle, 0xD0, MPU6050_RA_ACCEL_XOUT_H, I2C_MEMADD_SIZE_8BIT, I2CRx, 6, 1)) {
-				for(i=0;i<3;i++){
-					GYACCHandle->data[i] = I2CRx[i*2];
-					GYACCHandle->data[i] = GYACCHandle->data[i] << 8;
-					GYACCHandle->data[i] |= I2CRx[i*2+1];
-				}				
+				x = I2CRx[0];
+				x = x << 8;
+				x |= I2CRx[1];
+				
+				y = I2CRx[2];
+				y = y << 8;
+				y |= I2CRx[3];
+				
+				z = I2CRx[4];
+				z = z << 8;
+				z |= I2CRx[5];
+				
 				//calculate angles according phone specification 
-				xD = (double) GYACCHandle->data[0];  // scale it to make it 0-1g
-				yD = (double) GYACCHandle->data[1];	 // scale it to make it 0-1g
-				zD = (double) GYACCHandle->data[2];	 // scale it to make it 0-1g
-				roll = atan2(yD,zD)*57.3;
-				pitch = atan2(zD,sqrt(zD*zD+yD*yD));
+				xD = (double) x;  
+				yD = (double) y;	 
+				zD = (double) z;	 
+				pitchD = atan2(-xD,zD)*57.3;					
+				rollD = atan2(yD,sqrt(xD*xD+zD*zD))*57.3;
+				GYACCHandle->pitchAngles[GYACCHandle->angleIndex] = (int32_t) pitchD;
+				GYACCHandle->rollAngles[GYACCHandle->angleIndex++] = (int32_t) rollD;
+				if(GYACCHandle->angleIndex == 5){
+					GYACCHandle->angleIndex = 0;
+					GYACCHandle->newDataAvailable = 1;
+				}
 				
 			}
 			else{
@@ -231,6 +246,37 @@ void GYACC_ReadDataFromSensor(GYACC_TypeDef* GYACCHandle,uint8_t* dataBuffer){
 
 }
 
+void GYACC_CalculateAngles(GYACC_TypeDef* GYACCHandle, uint8_t *dataBuffer){
+	//ACC:+000+111+222\r\n
+	//first coordinate - yaw angle
+	//second coordinate - pitch angle
+	//third coordinate - roll angle
+	
+	int32_t roll = 0,pitch = 0;
+	uint8_t i;
+	for(i=0;i<5;i++){
+		roll = roll + GYACCHandle->rollAngles[i];
+		pitch = pitch + GYACCHandle->pitchAngles[i];
+	}
+	roll = roll / 5;
+	pitch = pitch / 5;
+	if(roll>0){
+		dataBuffer[12] = '+';
+	}
+	else{
+		dataBuffer[12] = '-';
+		roll = - roll;
+	}
+	value2DecimalString((char*)dataBuffer+13,roll);
+	if(pitch>0){
+		dataBuffer[8] = '+';
+	}
+	else{
+		dataBuffer[8] = '-';
+		pitch = -pitch;
+	}
+	value2DecimalString((char*)dataBuffer+9,pitch);
+}
 void ACC_Interrupt_Callback(void){
 	if(GYACCHandle.acqStarted){
 		GYACCHandle.dataReadyTask = 1;

@@ -403,7 +403,9 @@ typedef struct
 
 			uint8_t acqStarted;														//Flag that specifies whether continuous acquisition is started or not
 						
-			uint16_t data[3];															//New data read from GYACC0(ACCx,ACCy,ACCz)			
+			int32_t rollAngles[5];												//Last five roll angles			
+			int32_t pitchAngles[5];												//Last five pitch angles
+			uint8_t angleIndex;														//
 			uint8_t newDataAvailable;											//Flag that specifies whether new data is available			
 			uint8_t dataReadyTask;												//Flag that is raised when interrupt is received
 	
@@ -416,7 +418,8 @@ typedef struct
 void GYACC_Init(I2C_HandleTypeDef* i2cHandle, GYACC_TypeDef* GYACCHandle);
 void GYACC_Start_Acquisition(GYACC_TypeDef* GYACCHandle);
 void GYACC_Stop_Acquisition(GYACC_TypeDef* GYACCHandle);
-void GYACC_ReadDataFromSensor(GYACC_TypeDef* GYACCHandle,uint8_t* dataBuffer);
+void GYACC_ReadDataFromSensor(GYACC_TypeDef* GYACCHandle);
+void GYACC_CalculateAngles(GYACC_TypeDef* GYACCHandle, uint8_t *dataBuffer);
 void ACC_Interrupt_Callback(void);
 
 #endif 

@@ -4,6 +4,7 @@ extern mTimerHandler_TypeDef  mTimHandle;
 extern BLE_TypeDef	BLEHandle;
 extern ECG_TypeDef ECGHandle;
 extern BATT_TypeDef BATTHandle;
+extern GYACC_TypeDef GYACCHandle;
 
 #ifdef MCU_TEST_DATA
 extern int32_t	testCounter;
@@ -135,6 +136,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 		
 	}
 #endif
+#ifdef ACC_TEST
+	GYACCHandle.pitchAngles[GYACCHandle.angleIndex] = 20;
+	GYACCHandle.rollAngles[GYACCHandle.angleIndex++] = 50;
+	if(GYACCHandle.angleIndex == 5){
+		GYACCHandle.angleIndex = 0;
+		GYACCHandle.newDataAvailable = 1;
+	}
+#endif	
+
 	//=============ADC battery measure=================//
 	if(BATTHandle.adcEnabled){
 		if(BATTHandle.preparingNewData){

@@ -82,7 +82,7 @@ uint8_t ch2MSB,ch2CSB,ch2LSB;
 uint8_t ch3MSB,ch3CSB,ch3LSB;
 uint8_t dataPacket[130] = "ANssD11D12D13S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2CC";
 uint8_t batteryPacket[10] = "BAT:000\r\n";
-uint8_t accPacket[16] = "ACC:000111222\r\n";
+uint8_t accPacket[19] = "ACC:+000+111+222\r\n";
 //--------Variables for storing BLE data in packet-------//
 
 //--------Test variables-----//
@@ -231,6 +231,13 @@ int main(void)
 		}
 		//=======Read battery value and check battery voltage==========//
 		
+		//================Read accelerometer values====================//
+		if(GYACCHandle.dataReadyTask){
+			GYACC_ReadDataFromSensor(&GYACCHandle);
+			GYACCHandle.dataReadyTask = 0;
+		}
+		//================Read accelerometer values====================//
+		
 		//==========Check BLE module status using STATUS pins========//
 		if(HAL_GPIO_ReadPin(BT_CFG1_PORT,BT_CFG1_PIN) == GPIO_PIN_RESET){
 			if(HAL_GPIO_ReadPin(BT_CFG2_PORT,BT_CFG2_PIN) == GPIO_PIN_SET){				//Data sesion opened (MLDP mode)
@@ -241,6 +248,7 @@ int main(void)
 			if((programStage == BLE_ACQ_TRANSFERING)||(programStage==BLE_ACQ_TRANSFERING_AND_STORING)){
 #ifdef ECG_Du_v1_Board
 					ECG_Stop_Acquisition(&ECGHandle);
+					GYACC_Stop_Acquisition(&GYACCHandle);
 #endif
 					EnterLowEnergyMODE();					
 				}				
@@ -293,6 +301,7 @@ int main(void)
 					if((programStage == BLE_ACQ_TRANSFERING)||(programStage==BLE_ACQ_TRANSFERING_AND_STORING)){
 #ifdef ECG_Du_v1_Board
 						ECG_Stop_Acquisition(&ECGHandle);
+						GYACC_Stop_Acquisition(&GYACCHandle);
 #endif
 						EnterLowEnergyMODE();
 					}				
@@ -339,6 +348,7 @@ int main(void)
 						startTIM1 = 1;	
 						
 						ECG_Stop_Acquisition(&ECGHandle);
+						GYACC_Stop_Acquisition(&GYACCHandle);
 						
 						EnterLowEnergyMODE();
 					}
@@ -377,7 +387,7 @@ int main(void)
 						testCounter = 0;
 
 						ECG_Start_Acquisition(&ECGHandle);			
-						
+						GYACC_Start_Acquisition(&GYACCHandle);
 					}
 					
 				}				
@@ -389,6 +399,7 @@ int main(void)
 					dataMemoryIndex = 0;
 					
 					ECG_Stop_Acquisition(&ECGHandle);
+					GYACC_Stop_Acquisition(&GYACCHandle);
 					startTIM1 = 1;
 					
 				}
@@ -410,7 +421,11 @@ int main(void)
 				else if(BLEHandle.ackOrAppMessage.message == APP_STAY){
 					startTIM1 = 1;
 				}
-				
+				else if(BLEHandle.ackOrAppMessage.message == APP_DFU){
+					if(HAL_GPIO_ReadPin(GPIOH,GPIO_PIN_3) == GPIO_PIN_SET){
+						HAL_NVIC_SystemReset();
+					}
+				}
 				BLEHandle.ackOrAppMessage.messageUpdated = 0;
 			}
 			//--------Check if App command message is received---------//
@@ -455,16 +470,16 @@ int main(void)
 			//--------Prepare BLE transfering packet---------//
 			if((programStage == BLE_ACQ_TRANSFERING)||(programStage==BLE_ACQ_TRANSFERING_AND_STORING)){					
 				if(GYACCHandle.newDataAvailable){
+						GYACCHandle.newDataAvailable = 0;	
+						GYACC_CalculateAngles(&GYACCHandle,accPacket);
 						if(BLE_ERROR == BLE_SendData(&BLEHandle,accPacket,15)){
 							programStage = BLE_WAIT_CONN;
 							startTIM1 = 1;						
 #ifdef ECG_Du_v1_Board
 							ECG_Stop_Acquisition(&ECGHandle);
+							GYACC_Stop_Acquisition(&GYACCHandle);
 #endif						
 							EnterLowEnergyMODE();
-						}
-						else {
-							GYACCHandle.newDataAvailable = 0;
 						}
 				}
 				if(!BLEHandle.dataOKWaiting){
@@ -549,6 +564,7 @@ int main(void)
 								startTIM1 = 1;						
 #ifdef ECG_Du_v1_Board
 								ECG_Stop_Acquisition(&ECGHandle);
+								GYACC_Stop_Acquisition(&GYACCHandle);
 #endif						
 								EnterLowEnergyMODE();
 							}
@@ -594,6 +610,7 @@ int main(void)
 											startTIM1 = 1;						
 #ifdef ECG_Du_v1_Board
 											ECG_Stop_Acquisition(&ECGHandle);
+											GYACC_Stop_Acquisition(&GYACCHandle);
 #endif						
 											EnterLowEnergyMODE();
 										}										

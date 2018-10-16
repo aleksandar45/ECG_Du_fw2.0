@@ -160,6 +160,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	}
 	//=============ADC battery measure=================//
 	
+#ifdef DEBUG_MODE
 	//==============BLE module error occured==========//
 	BLEHandle.CMDTimeoutCounter+=mTimHandle.period;
 	if(BLEHandle.bleStatus == BLE_ERROR){
@@ -180,7 +181,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 		mTimer_LBlinkError_Start(&mTimHandle,ECGHandle.ErrorNumber,3);
 	}
 	//==============ECG module error occured==========//
-	
+#endif	
 	
 	if(mTimHandle.timer1_enabled){
 		mTimHandle.timer1_counter += mTimHandle.period;

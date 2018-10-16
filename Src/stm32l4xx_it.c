@@ -52,9 +52,10 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 extern TIM_HandleTypeDef    TimHandle;
-extern UART_HandleTypeDef	 BLEUartHandle;
-extern ADC_HandleTypeDef BATTAdcHandle;
-extern SPI_HandleTypeDef		 ECGSpiHandle;
+extern UART_HandleTypeDef	 	BLEUartHandle;
+extern ADC_HandleTypeDef 		BATTAdcHandle;
+extern SPI_HandleTypeDef		ECGSpiHandle;
+extern RTC_HandleTypeDef 	 	RTCHandle;
 
 extern mTimerHandler_TypeDef  mTimHandle;
 /* Private function prototypes -----------------------------------------------*/
@@ -174,7 +175,7 @@ void SysTick_Handler(void)
   * @param  None
   * @retval None
   */
-#ifdef ECG_Du_v1_Board
+#ifdef ECG_Du_v2_Board
 void EXTI9_5_IRQHandler(void)
 {
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_8);			//DRDY pin
@@ -250,6 +251,16 @@ void DMA1_Channel3_IRQHandler(void)
 void ADC1_IRQHandler(void)
 {
   HAL_ADC_IRQHandler(&BATTAdcHandle);
+}
+
+/**
+  * @brief  This function handles RTC Auto wake-up interrupt request.
+  * @param  None
+  * @retval None
+  */
+void RTC_WKUP_IRQHandler(void)
+{
+  HAL_RTCEx_WakeUpTimerIRQHandler(&RTCHandle);
 }
 
 /**

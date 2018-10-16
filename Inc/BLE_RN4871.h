@@ -164,7 +164,7 @@ typedef struct
 
 
 // Functions ------------------------------------------------------------------//
-void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle);
+void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle, uint8_t onlyUARTInit);
 RN4871_UARTStatusTypeDef BLE_EnterCMDMode(BLE_TypeDef* BLEHandle, BLE_CMDWaitRespTypeDef waitCMDResponse);
 RN4871_UARTStatusTypeDef BLE_EnterLPMode(BLE_TypeDef* BLEHandle);
 RN4871_UARTStatusTypeDef BLE_ExitLPMode(BLE_TypeDef* BLEHandle);

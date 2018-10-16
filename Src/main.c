@@ -52,6 +52,7 @@ TIM_HandleTypeDef    TimHandle;
 UART_HandleTypeDef	 BLEUartHandle;
 SPI_HandleTypeDef		 ECGSpiHandle;
 ADC_HandleTypeDef		 BATTAdcHandle;
+RTC_HandleTypeDef 	 RTCHandle;
 
 mTimerHandler_TypeDef  mTimHandle;
 BLE_TypeDef	BLEHandle;
@@ -108,17 +109,27 @@ int main(void)
 
   HAL_Init();
 	
+	//while(HAL_GPIO_ReadPin(BT_CFG1_PORT,BT_CFG1_PIN) == GPIO_PIN_SET){}
+	
   SystemClock_Config();		
 		
-	
+	programStage = SYSTEM_INIT;
+	//programStage = SYSTEM_INIT_WITHOUT_BLE;
+	RTC_Config(&RTCHandle);
 	__HAL_RCC_PWR_CLK_ENABLE();
-	 // Check and Clear the Wakeup flag 
+	 // Check wakeup type
   if (__HAL_PWR_GET_FLAG(PWR_FLAG_WUF2) != RESET)
   {
     __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WUF2);
+		programStage = SYSTEM_INIT_WITHOUT_BLE;
   }
-	
-	programStage = SYSTEM_INIT;
+	if(__HAL_PWR_GET_FLAG(PWR_FLAG_WUFI) != RESET)
+  {
+    __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WUFI); 									  
+		programStage = SYSTEM_INIT;
+  }
+	HAL_RTCEx_DeactivateWakeUpTimer(&RTCHandle);
+
 		
 	HAL_Delay(100);																				//Wait to power up ADS1294  			
 	BATT_Init(&BATTAdcHandle,&BATTHandle);	
@@ -126,26 +137,42 @@ int main(void)
 	ECG_Init(&ECGSpiHandle,&ECGHandle);
 	mTimer_Config(&TimHandle, &mTimHandle);
 	
-#ifdef DEBUG_MODE
+if(programStage == SYSTEM_INIT_WITHOUT_BLE){
+	BLE_Init(&BLEUartHandle,&BLEHandle,1);
 	mTimer_LBlinkStatus_Start(&mTimHandle,1000,0);
-#endif
-	
-	BLE_Init(&BLEUartHandle,&BLEHandle);	
+	if(HAL_GPIO_ReadPin(BT_CFG1_PORT,BT_CFG1_PIN) == GPIO_PIN_RESET){	
+		BLEHandle.connectionStatus = CONNECTED;
+		programStage = BLE_WAIT_MLDP_AND_CONN_PARAMS;
+		startTIM1 = 1;
+		BLEHandle.connParamsUpdateCounter = 0;
+	}
+	else{
+		programStage = BLE_WAIT_CONN;
+		startTIM1 = 1;
+	}
+}
+else if(programStage == SYSTEM_INIT){	
+	mTimer_LBlinkStatus_Start(&mTimHandle,200,0);
+	BLE_Init(&BLEUartHandle,&BLEHandle,0);
+
+	programStage = BLE_BATT_MEAS;
+	startTIM1 = 1;
+}
 	
 	BATT_StartMeasure(&BATTHandle);	
-	
-	programStage = BLE_WAIT_CONN;
-	startTIM1 = 1;
+
 	
 	while(1){
 		//===========Start timeout timer for each program stage========//
+		if((programStage == BLE_BATT_MEAS) && (startTIM1)){
+			mTimer_TIM1_Start(&mTimHandle,3000);
+			startTIM1 = 0;
+		}
 		if((programStage == BLE_WAIT_CONN) && (startTIM1)){			
 			mTimer_TIM1_Start(&mTimHandle,35000);
-#ifdef DEBUG_MODE
 			if(!BATTHandle.lowLevelBattery){
 				mTimer_LBlinkStatus_Start(&mTimHandle,1000,0);
 			}
-#endif
 			startTIM1 = 0;
 		}
 		if((programStage == BLE_WAIT_MLDP_AND_CONN_PARAMS) && (startTIM1)){
@@ -158,29 +185,23 @@ int main(void)
 		}
 		if((programStage == BLE_WAIT_START_ACQ) && (startTIM1)){			
 			mTimer_TIM1_Start(&mTimHandle,10000);
-#ifdef DEBUG_MODE		
 			if(!BATTHandle.lowLevelBattery){			
 				mTimer_LBlinkStatus_Start(&mTimHandle,500,0);
 			}
-#endif
 			startTIM1 = 0;
 		}
 		if(((programStage == BLE_ACQ_TRANSFERING)|| (programStage==BLE_ACQ_TRANSFERING_AND_STORING)) && (startTIM1)){
 			mTimer_TIM1_Start(&mTimHandle,50000);
-#ifdef DEBUG_MODE
 			if(!BATTHandle.lowLevelBattery){
 				mTimer_LBlinkStatus_Start(&mTimHandle,300,0);
 			}
-#endif
 			startTIM1 = 0;
 		}
 		if((programStage == BLE_MEMORY_TRANSFERING) && (startTIM1)){
 			mTimer_TIM1_Start(&mTimHandle,50000);
-#ifdef DEBUG_MODE
 			if(!BATTHandle.lowLevelBattery){
 				mTimer_LBlinkStatus_Start(&mTimHandle,300,0);
 			}
-#endif
 			startTIM1 = 0;
 		}
 		//===========Start timeout timer for each program stage========//
@@ -193,8 +214,12 @@ int main(void)
 					BLE_SendData(&BLEHandle,batteryPacket,9);	
 					programStage = BLE_WAIT_START_ACQ;
 					startTIM1 = 1;
-				}
+			}
 			else {
+				if(programStage==BLE_BATT_MEAS){
+					tempData8 = BATT_CalculatePercentage(&BATTHandle);
+					
+				}
 				if(!BLEHandle.cmdMode){
 					BLE_EnterCMDMode(&BLEHandle, WAIT_CMD_RESP);
 				}
@@ -209,7 +234,7 @@ int main(void)
 		//=======Read battery value and check battery voltage==========//
 		if(BATTHandle.adcBufferFull){
 			BATTHandle.currentBatteryVoltage = BATT_CalculateVoltage(&BATTHandle);
-//#ifdef ECG_Du_v1_Board
+
 			if(BATTHandle.currentBatteryVoltage <= LOW_BATTERY_LEVEL_LOW_VOLTAGE){
 				if(!BATTHandle.lowLevelBattery){
 					mTimer_LBlinkStatus_Stop(&mTimHandle);
@@ -223,7 +248,7 @@ int main(void)
 					mTimer_LBlinkStatus_Stop(&mTimHandle);			//put old state of blink status
 				}
 			}
-//#endif
+
 		}			
 		if(BATTHandle.adcDataReady){
 			BATT_ReadADCData(&BATTHandle);
@@ -239,14 +264,14 @@ int main(void)
 		//================Read accelerometer values====================//
 		
 		//==========Check BLE module status using STATUS pins========//
-		if(HAL_GPIO_ReadPin(BT_CFG1_PORT,BT_CFG1_PIN) == GPIO_PIN_RESET){
+		if(HAL_GPIO_ReadPin(BT_CFG1_PORT,BT_CFG1_PIN) == GPIO_PIN_RESET){			
 			if(HAL_GPIO_ReadPin(BT_CFG2_PORT,BT_CFG2_PIN) == GPIO_PIN_SET){				//Data sesion opened (MLDP mode)
 				BLEHandle.cmdMode = 0;
 			}	
 		}
 		else if((BLEHandle.connectionStatus==CONNECTED) && (HAL_GPIO_ReadPin(BT_CFG2_PORT,BT_CFG2_PIN) == GPIO_PIN_RESET)){
 			if((programStage == BLE_ACQ_TRANSFERING)||(programStage==BLE_ACQ_TRANSFERING_AND_STORING)){
-#ifdef ECG_Du_v1_Board
+#ifdef ECG_Du_v2_Board
 					ECG_Stop_Acquisition(&ECGHandle);
 					GYACC_Stop_Acquisition(&GYACCHandle);
 #endif
@@ -282,7 +307,7 @@ int main(void)
 					}
 					BLEHandle.connParamsUpdateCounter++;
 					if((BLEHandle.statusMessage.param1<=12)&&(BLEHandle.statusMessage.param3>=400) && (!BLEHandle.cmdMode)) {
-					//if((BLEHandle.statusMessage.param1==12)&&(BLEHandle.statusMessage.param3==512) && (!BLEHandle.cmdMode)) {
+					//if(!BLEHandle.cmdMode) {
 						//programStage = ECG_INIT;
 						mTimer_TIM1_Start(&mTimHandle,1000);																		
 						programStage = BLE_WAIT_BATTERY_INF;
@@ -299,7 +324,7 @@ int main(void)
 			else if(BLEHandle.statusMessage.message == DISCONNECT){
 				if(BLEHandle.connectionStatus == CONNECTED){
 					if((programStage == BLE_ACQ_TRANSFERING)||(programStage==BLE_ACQ_TRANSFERING_AND_STORING)){
-#ifdef ECG_Du_v1_Board
+#ifdef ECG_Du_v2_Board
 						ECG_Stop_Acquisition(&ECGHandle);
 						GYACC_Stop_Acquisition(&GYACCHandle);
 #endif
@@ -472,10 +497,10 @@ int main(void)
 				if(GYACCHandle.newDataAvailable){
 						GYACCHandle.newDataAvailable = 0;	
 						GYACC_CalculateAngles(&GYACCHandle,accPacket);
-						if(BLE_ERROR == BLE_SendData(&BLEHandle,accPacket,15)){
+						if(BLE_ERROR == BLE_SendData(&BLEHandle,accPacket,18)){
 							programStage = BLE_WAIT_CONN;
 							startTIM1 = 1;						
-#ifdef ECG_Du_v1_Board
+#ifdef ECG_Du_v2_Board
 							ECG_Stop_Acquisition(&ECGHandle);
 							GYACC_Stop_Acquisition(&GYACCHandle);
 #endif						
@@ -562,7 +587,7 @@ int main(void)
 							if(BLE_ERROR == BLE_SendData(&BLEHandle,dataPacket,129)){
 								programStage = BLE_WAIT_CONN;
 								startTIM1 = 1;						
-#ifdef ECG_Du_v1_Board
+#ifdef ECG_Du_v2_Board
 								ECG_Stop_Acquisition(&ECGHandle);
 								GYACC_Stop_Acquisition(&GYACCHandle);
 #endif						
@@ -608,7 +633,7 @@ int main(void)
 										if(BLE_ERROR == BLE_SendData(&BLEHandle,&dataPacketsStorage[i][2],129)){
 											programStage = BLE_WAIT_CONN;
 											startTIM1 = 1;						
-#ifdef ECG_Du_v1_Board
+#ifdef ECG_Du_v2_Board
 											ECG_Stop_Acquisition(&ECGHandle);
 											GYACC_Stop_Acquisition(&GYACCHandle);
 #endif						

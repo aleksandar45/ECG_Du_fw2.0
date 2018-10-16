@@ -6,9 +6,9 @@ extern BATT_TypeDef BATTHandle;
 
 extern TIM_HandleTypeDef    TimHandle;
 extern mTimerHandler_TypeDef  mTimHandle;
+extern RTC_HandleTypeDef 	 RTCHandle;
 
-void SystemClock_Config(void)
-{
+void SystemClock_Config(void){
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
 
@@ -104,25 +104,25 @@ void EnterStandByMODE(void){
 #ifdef RN4871_Nucleo_Test_Board	
 	HAL_PWREx_EnableGPIOPullUp(PWR_GPIO_A,PWR_GPIO_BIT_11);		// BT_UART_RX_IND
 	
-	 HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN2);		// Disable all used wakeup sources: WKUP pin 
-
-  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WUF2);					// Clear wake up Flag
-
-	HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN2_LOW);	// Enable wakeup pin WKUP2 
+	 HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN2);								// Disable all used wakeup sources: WKUP pin 
+  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WUF2);											// Clear wake up Flag
+	HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN2_LOW);							// Enable wakeup pin WKUP2 
 	
 #endif
-#ifdef ECG_Du_v1_Board
+#ifdef ECG_Du_v2_Board
 		
 	HAL_PWREx_EnableGPIOPullUp(PWR_GPIO_A,PWR_GPIO_BIT_15);		// BT_UART_RX_IND
 	HAL_PWREx_EnableGPIOPullDown(PWR_GPIO_B,PWR_GPIO_BIT_1);	// EN_BAT
 	
-  HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN2);		// Disable all used wakeup sources: WKUP pin 
-
-  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WUF2);					// Clear wake up Flag
-
-	HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN2_HIGH);	// Enable wakeup pin WKUP2 
+  HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN2);								// Disable all used wakeup sources: WKUP pin 
+  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WUF2);											// Clear wake up Flag
+	HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN2_HIGH);						// Enable wakeup pin WKUP2 
   
 #endif
+
+	HAL_RTCEx_DeactivateWakeUpTimer(&RTCHandle);							// Disable all used wakeup sources	  
+  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);												// Clear all related wakeup flags
+	HAL_RTCEx_SetWakeUpTimer_IT(&RTCHandle, 0x001E, RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
 	
   HAL_PWR_EnterSTANDBYMode();										// Request to enter STANDBY mode 
 	
@@ -131,8 +131,7 @@ void EnterStandByMODE(void){
 	HAL_NVIC_SystemReset();
 }
 
-void SystemClockHSI_Config(void)
-{
+void SystemClockHSI_Config(void){
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
 
@@ -186,8 +185,7 @@ void SystemClockHSI_Config(void)
   }
 }
 
-void SystemClockMSI_Config(void)
-{
+void SystemClockMSI_Config(void){
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
 

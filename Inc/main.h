@@ -44,6 +44,7 @@
 #include "mUART.h"
 #include "mADC.h"
 #include "mFLASHInt.h"
+#include "mRTC.h"
 #include "BLE_RN4871.h"
 #include "ECG_ADS1294.h"
 #include "BATT.h"
@@ -59,7 +60,7 @@
 	#define MCU_TEST_DATA
 	#define ACC_TEST
 #else
-	#define ECG_Du_v1_Board
+	#define ECG_Du_v2_Board
 	#define DATA_BUFFER_SIZE			980
 	
 	//#define MCU_TEST_DATA
@@ -103,7 +104,7 @@
 	#define BT_CFG3_CLK_DISABLE()          		 __HAL_RCC_GPIOC_CLK_DISABLE()
 	
 #endif
-#ifdef ECG_Du_v1_Board
+#ifdef ECG_Du_v2_Board
 	#define LED_ERROR_PIN                      GPIO_PIN_7
 	#define LED_ERROR_PORT                     GPIOB
 	#define LED_ERROR_CLK_ENABLE()             __HAL_RCC_GPIOB_CLK_ENABLE()
@@ -144,16 +145,18 @@
 
 // Exported types ------------------------------------------------------------//
 typedef enum {
-	SYSTEM_INIT = 0,							//BLE module Initialization 
-	BLE_WAIT_CONN = 1,				//Wait for BLE connection
-	BLE_WAIT_MLDP_AND_CONN_PARAMS = 3,   //Wait for BLE connection parameters update and notification enable on UART Transparent characteristic
-	ECG_INIT = 4,							//Initialize ECG module
-	ECG_WAIT_LEAD_ON = 5,			//Wait leads on status to start acquisition
-	BLE_WAIT_BATTERY_INF = 6,	//Wait some delay to send Battery information
-	BLE_WAIT_START_ACQ = 7,		//Wait start acquisition CMD
-	BLE_ACQ_TRANSFERING = 8,	//Transfering ECG data over BLE
-	BLE_ACQ_TRANSFERING_AND_STORING = 9,	//Transfering ECG data over BLE and storing packets in FLASH memory
-	BLE_MEMORY_TRANSFERING = 10,	//Transfering memorized data over BLE (missing packets)
+	SYSTEM_INIT = 0,							//Complete system initialization 
+	SYSTEM_INIT_WITHOUT_BLE = 1,	//System initialization without BLE initialization
+	BLE_BATT_MEAS = 2,						//Only battery measurement folowed by standby state
+	BLE_WAIT_CONN = 3,						//Wait for BLE connection
+	BLE_WAIT_MLDP_AND_CONN_PARAMS = 4,   //Wait for BLE connection parameters update and notification enable on UART Transparent characteristic
+	ECG_INIT = 5,							//Initialize ECG module
+	ECG_WAIT_LEAD_ON = 6,			//Wait leads on status to start acquisition
+	BLE_WAIT_BATTERY_INF = 7,	//Wait some delay to send Battery information
+	BLE_WAIT_START_ACQ = 8,		//Wait start acquisition CMD
+	BLE_ACQ_TRANSFERING = 9,	//Transfering ECG data over BLE
+	BLE_ACQ_TRANSFERING_AND_STORING = 10,	//Transfering ECG data over BLE and storing packets in FLASH memory
+	BLE_MEMORY_TRANSFERING = 11,	//Transfering memorized data over BLE (missing packets)
 }ProgramStageTypeDef;
 
 // Exported constants --------------------------------------------------------//

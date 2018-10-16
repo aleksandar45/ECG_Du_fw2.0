@@ -61,7 +61,6 @@ static DMA_HandleTypeDef hdmaUART_rx;
 void HAL_MspInit(void)
 {
 	GPIO_InitTypeDef  GPIO_InitStruct;
-	uint16_t waitCounter = 0;
 	
 #ifdef RN4871_Nucleo_Test_Board
 	__HAL_RCC_GPIOC_CLK_ENABLE();
@@ -153,8 +152,24 @@ void HAL_MspInit(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
   HAL_GPIO_Init(BT_CFG3_PORT, &GPIO_InitStruct);
 	//HAL_GPIO_WritePin(BT_CFG3_PORT,BT_CFG3_PIN, GPIO_PIN_RESET);
+	
+	// WKUP pin
+	__HAL_RCC_GPIOC_CLK_ENABLE();
+	GPIO_InitStruct.Pin = GPIO_PIN_13;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull  = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);	
+	
+	// BOOT0 PIN
+	__HAL_RCC_GPIOH_CLK_ENABLE();
+	GPIO_InitStruct.Pin = GPIO_PIN_3;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull  = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
+  HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
 
-#ifdef ECG_Du_v1_Board
+#ifdef ECG_Du_v2_Board
 		//BT_UART_RX_IND
 	__HAL_RCC_GPIOA_CLK_ENABLE();
 	GPIO_InitStruct.Pin = GPIO_PIN_15;
@@ -174,35 +189,6 @@ void HAL_MspInit(void)
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 	HAL_GPIO_WritePin(GPIOB,GPIO_PIN_4,GPIO_PIN_SET);
 	
-	// WKUP pin
-	__HAL_RCC_GPIOC_CLK_ENABLE();
-	GPIO_InitStruct.Pin = GPIO_PIN_13;
-	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull  = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);	
-	
-	HAL_Delay(100);
-	__HAL_RCC_GPIOH_CLK_ENABLE();
-	GPIO_InitStruct.Pin = GPIO_PIN_3;
-	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull  = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
-  HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
-	if(HAL_GPIO_ReadPin(GPIOH,GPIO_PIN_3) == GPIO_PIN_SET){
-		waitCounter = 0;
-		while(1){
-			HAL_Delay(10);
-			waitCounter++;
-			if(waitCounter>=1000){
-				if(HAL_GPIO_ReadPin(GPIOC,GPIO_PIN_13) == GPIO_PIN_SET){
-					HAL_NVIC_SystemReset();
-				}
-				else break;
-			}
-			if(HAL_GPIO_ReadPin(GPIOC,GPIO_PIN_13) == GPIO_PIN_RESET) break;
-		}				
-	}
 	
 	// ECG_CS pin
 	__HAL_RCC_GPIOA_CLK_ENABLE();
@@ -537,5 +523,47 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef *spi){
 	// De-Initialize the DMA associated to transmision process 
 	HAL_DMA_DeInit(&hdmaSPI_tx);
 	
+}
+void HAL_RTC_MspInit(RTC_HandleTypeDef *hrtc)
+{
+  RCC_OscInitTypeDef RCC_OscInitStruct;
+  RCC_PeriphCLKInitTypeDef  PeriphClkInitStruct;
+
+  // Configure the RTC clock source 
+  RCC_OscInitStruct.OscillatorType =  RCC_OSCILLATORTYPE_LSI;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
+  if(HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    //while(1);
+  }
+
+  // Select LSI as RTC clock source 
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC;
+  PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSI;
+  if(HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
+  { 
+    //while(1);
+  }
+
+  // Enable the RTC peripheral Clock ####################################*/
+  __HAL_RCC_RTC_ENABLE();
+  
+  // Configure the NVIC for RTC Alarm 
+  HAL_NVIC_SetPriority(RTC_WKUP_IRQn, 0x5, 0);
+  HAL_NVIC_EnableIRQ(RTC_WKUP_IRQn);
+}
+
+/**
+  * @brief RTC MSP De-Initialization 
+  *        This function freeze the hardware resources used in this example:
+  *          - Disable the Peripheral's clock
+  * @param hrtc: RTC handle pointer
+  * @retval None
+  */
+void HAL_RTC_MspDeInit(RTC_HandleTypeDef *hrtc)
+{
+  /*##-1- Reset peripherals ##################################################*/
+  __HAL_RCC_RTC_DISABLE();
 }
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

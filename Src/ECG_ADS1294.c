@@ -22,7 +22,7 @@ void ECG_Init(SPI_HandleTypeDef* spiHandle, ECG_TypeDef* ECGHandle){
 	ECGHandle->forwardFIFO = 1;
 	ECGHandle->ecgStatus = ECG_OK;
 
-#ifdef ECG_Du_v1_Board
+#ifdef ECG_Du_v2_Board
 	mSPI_Config(spiHandle);
 	
 	//HAL_Delay(200);																									//After power supply is turned on it is necessary to wait 200ms 

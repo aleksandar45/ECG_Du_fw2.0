@@ -1,7 +1,7 @@
 #include "BLE_RN4871.h"
 char advertisingNameCMD[30] = "IA,09,524E2D";
 
-void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle){
+void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle,uint8_t onlyUARTInit){
 	uint16_t i;
 	
 	BLEHandle->uartHandle = uartHandle;
@@ -12,6 +12,7 @@ void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle){
 	BLEHandle->uartDataAvailable = 0;
 	BLEHandle->uartErrorRecover = 0;
 	BLEHandle->uartBufferReadPointer = BLEHandle->uartReceiveBuffer;
+	BLEHandle->cmdMode = 1;
 #ifdef BLE_DATA_DOK_RESPONSE
 	BLEHandle->dataOKRespEnabled = 1;
 #else
@@ -22,7 +23,19 @@ void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle){
 	//=================Check BLE UART status============//
 	uartHandle->RxState =HAL_UART_STATE_READY;
 	mUART_Config(uartHandle,460800,UART_HWCONTROL_CTS);//UART_HWCONTROL_CTS
-	mUART_Receive_IT(uartHandle,BLEHandle->uartReceiveBuffer,200);	
+	mUART_Receive_IT(uartHandle,BLEHandle->uartReceiveBuffer,200);
+		
+	if(onlyUARTInit) {
+		/*BLE_EnterCMDMode(BLEHandle, NO_WAIT_CMD_RESP);	
+		HAL_Delay(20);
+		if(compareUartMessage(BLEHandle,"CMD",3,SEEK_TO_END)!=0){
+			uartHandle->RxState =HAL_UART_STATE_READY;
+			mUART_Config(uartHandle,BLEHandle->uartBaudRate,UART_HWCONTROL_NONE);
+			mUART_Receive_IT(uartHandle,BLEHandle->uartReceiveBuffer,200);			
+		}
+		BLE_SendCMD(BLEHandle,"T,0006,000C,0000,0200",WAIT_CMD_RESP);						//Send preferable connection parameters*/
+		return;
+	}
 	//HAL_UART_Receive_DMA(uartHandle, BLEHandle->uartReceiveBuffer,200);
 
 	HAL_GPIO_WritePin(BT_RESET_PORT,BT_RESET_PIN,GPIO_PIN_RESET);				//Hardware Reset					
@@ -77,10 +90,12 @@ void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle){
 	HAL_Delay(60);
 	BLE_SendCMD(BLEHandle,"V",NO_WAIT_CMD_RESP);						//Klll connection if exists
 	HAL_Delay(60);
-	BLE_SendCMD(BLEHandle,"NB,09,524E42",NO_WAIT_CMD_RESP);		//Set non-connectable beacon advertisement payload (Complete local name = "RNB")
-	HAL_Delay(60);
+	//BLE_SendCMD(BLEHandle,"NB,09,524E42",NO_WAIT_CMD_RESP);		//Set non-connectable beacon advertisement payload (Complete local name = "RNB")
+	//HAL_Delay(60);
 	BLE_SendCMD(BLEHandle,"NA,Z",NO_WAIT_CMD_RESP);						//Clear advertisement payload
 	HAL_Delay(60);
+	//BLE_SendCMD(BLEHandle,"NA,01,06",NO_WAIT_CMD_RESP);				//Set advertisement payload (flag)
+	//HAL_Delay(60);
 	BLE_SendCMD(BLEHandle,"SC,0",NO_WAIT_CMD_RESP);						//Enable connectable advertisement
 	HAL_Delay(60);
 	BLE_SendCMD(BLEHandle,"S%,%,#",NO_WAIT_CMD_RESP);					//Set pre and post delimiter
@@ -212,7 +227,7 @@ void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle){
 	
 	//comment two lines when using RN4871 with wrong firmware
 	BLE_SendCMD(BLEHandle,"SW,0C,04",WAIT_CMD_RESP);				//Route UART_RX_INDICATION to CFG1 pin (P1_2)
-	BLE_SendCMD(BLEHandle,"SW,0D,00",WAIT_CMD_RESP);				//Route Status 2 to CFG2 pin (P1_3)	
+	BLE_SendCMD(BLEHandle,"SW,0D,00",WAIT_CMD_RESP);				//Route None to pin (P1_3)	
 	
 	BLE_SendCMD(BLEHandle,"ST,0006,000C,0000,0200",WAIT_CMD_RESP);	//Set preferable connection parameters
 	BLE_SendCMD(BLEHandle,"S-,RN",WAIT_CMD_RESP);						//Set serialized device name (RN_xxxx, where xxxx is last 2 bytes of MAC address)
@@ -241,13 +256,10 @@ void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle){
 	BLE_EnterCMDMode(BLEHandle, WAIT_CMD_RESP);
 	BLE_SendCMD(BLEHandle,"IA,Z",WAIT_CMD_RESP);			
 	BLE_SendCMD(BLEHandle,"A",WAIT_CMD_RESP);
-	//BLE_SendCMD(BLEHandle,"JC",WAIT_CMD_RESP);
-	//BLE_SendCMD(BLEHandle,"&,DF1234567890",WAIT_CMD_RESP);
-	//BLE_SendCMD(BLEHandle,"&C",WAIT_CMD_RESP);
 	BLE_SendCMD(BLEHandle,"IA,01,06",WAIT_CMD_RESP);
+	BLE_SendCMD(BLEHandle,"IA,08,313030",WAIT_CMD_RESP);
 	string2hexString(advertisingNameCMD + 12,BLEHandle->macAddressString + 8);	
 	BLE_SendCMD(BLEHandle,advertisingNameCMD,WAIT_CMD_RESP);	
-	
 	
 }
 
@@ -291,6 +303,7 @@ RN4871_UARTStatusTypeDef BLE_EnterCMDMode(BLE_TypeDef* BLEHandle, BLE_CMDWaitRes
 	return BLE_OK;
 }
 RN4871_UARTStatusTypeDef BLE_EnterLPMode(BLE_TypeDef* BLEHandle){
+	uint8_t i;
 	if(HAL_GPIO_ReadPin(BT_CFG1_PORT,BT_CFG1_PIN) == GPIO_PIN_RESET){
 		BLE_SendCMD(BLEHandle,"K,1",WAIT_CMD_RESP);													//Kill active BLE connection	
 		if(BLE_ERROR != BLE_CheckStatusMessage(BLEHandle,5000)){
@@ -302,29 +315,75 @@ RN4871_UARTStatusTypeDef BLE_EnterLPMode(BLE_TypeDef* BLEHandle){
 			}
 		}
 		else{			
+			BLE_SendCMD(BLEHandle,"D",NO_WAIT_CMD_RESP);																	//Take BLE module information
+			HAL_Delay(150);
+			
+			if(compareUartMessage(BLEHandle,"BTA=",4,NO_SEEK_TO_END)==0){
+				for(i=0;i<12;i++){
+					BLEHandle->macAddressString[i] = *BLEHandle->uartBufferReadPointer;
+					BLEHandle->uartBufferReadPointer++;
+					if(BLEHandle->uartBufferReadPointer>= (BLEHandle->uartReceiveBuffer + 200)){
+						BLEHandle->uartBufferReadPointer = BLEHandle->uartReceiveBuffer;
+					}
+				}
+			}
+			else{
+				BLEHandle->macAddressString[0]=0;
+				strcpy(BLEHandle->macAddressString,"D0D0D0D0D0D0");
+			}
+			compareUartMessage(BLEHandle,"Name",4,SEEK_TO_END);														//dummy clear	
+			
 			BLE_SendCMD(BLEHandle,"IA,Z",NO_WAIT_CMD_RESP);
-			HAL_Delay(60);		
-			//BLE_SendCMD(BLEHandle,"&,DF1234567890",NO_WAIT_CMD_RESP);					//MAC
-			//HAL_Delay(60);
+			HAL_Delay(60);
+			BLE_SendCMD(BLEHandle,"IA,01,06",NO_WAIT_CMD_RESP);
+			HAL_Delay(60);
+			string2hexString(advertisingNameCMD + 12,BLEHandle->macAddressString + 8);	
+			BLE_SendCMD(BLEHandle,advertisingNameCMD,NO_WAIT_CMD_RESP);
+			HAL_Delay(60);
+			BLE_SendCMD(BLEHandle,"IA,08,3130",NO_WAIT_CMD_RESP);
+			//BLE_SendCMD(BLEHandle,"IA,FF,10",NO_WAIT_CMD_RESP);
+			HAL_Delay(60);
 			BLE_SendCMD(BLEHandle,"A,3E8",NO_WAIT_CMD_RESP);													//Start LP advertising after 30s timeout
 			HAL_Delay(60);
-			//BLE_SendCMD(BLEHandle,"O,0",WAIT_CMD_RESP);
-			HAL_Delay(60);
-			compareUartMessage(BLEHandle,"AOK",3,SEEK_TO_END);				//dummy clear
+			compareUartMessage(BLEHandle,"AOK",3,SEEK_TO_END);												//dummy clear
 			
 			return BLE_OK;
 		}
 	}
+	BLE_SendCMD(BLEHandle,"D",NO_WAIT_CMD_RESP);																	//Take BLE module information
+	HAL_Delay(150);
 	
-	BLE_SendCMD(BLEHandle,"IA,Z",WAIT_CMD_RESP);
-	//BLE_SendCMD(BLEHandle,"&,DF1234567890",WAIT_CMD_RESP);								//MAC
-	BLE_SendCMD(BLEHandle,"A,3E8",WAIT_CMD_RESP);															//Start LP advertising after 30s timeout
+	if(compareUartMessage(BLEHandle,"BTA=",4,NO_SEEK_TO_END)==0){
+		for(i=0;i<12;i++){
+			BLEHandle->macAddressString[i] = *BLEHandle->uartBufferReadPointer;
+			BLEHandle->uartBufferReadPointer++;
+			if(BLEHandle->uartBufferReadPointer>= (BLEHandle->uartReceiveBuffer + 200)){
+				BLEHandle->uartBufferReadPointer = BLEHandle->uartReceiveBuffer;
+			}
+		}
+	}
+	else{
+		BLEHandle->macAddressString[0]=0;
+		strcpy(BLEHandle->macAddressString,"D0D0D0D0D0D0");
+	}
+	compareUartMessage(BLEHandle,"Name",4,SEEK_TO_END);														//dummy clear
+	
+	BLE_SendCMD(BLEHandle,"IA,Z",WAIT_CMD_RESP);	
+	BLE_SendCMD(BLEHandle,"IA,01,06",WAIT_CMD_RESP);
+	BLE_SendCMD(BLEHandle,"IA,08,3130",WAIT_CMD_RESP);
+	string2hexString(advertisingNameCMD + 12,BLEHandle->macAddressString + 8);	
+	BLE_SendCMD(BLEHandle,advertisingNameCMD,WAIT_CMD_RESP);
+	//BLE_SendCMD(BLEHandle,"IA,FF,10",WAIT_CMD_RESP);
+	BLE_SendCMD(BLEHandle,"A,3E8",WAIT_CMD_RESP);																	//Start LP advertising after 30s timeout
 			
-	//BLE_SendCMD(BLEHandle,"O,0",WAIT_CMD_RESP);
 	if(BLEHandle->bleStatus == BLE_ERROR){
-		BLE_Init(BLEHandle->uartHandle,BLEHandle);
-		BLE_SendCMD(BLEHandle,"IA,Z",WAIT_CMD_RESP);
-		//BLE_SendCMD(BLEHandle,"&,DF1234567890",WAIT_CMD_RESP);								//MAC
+		BLE_Init(BLEHandle->uartHandle,BLEHandle,0);
+		BLE_SendCMD(BLEHandle,"IA,Z",WAIT_CMD_RESP);	
+		BLE_SendCMD(BLEHandle,"IA,01,06",WAIT_CMD_RESP);
+		string2hexString(advertisingNameCMD + 12,BLEHandle->macAddressString + 8);	
+		BLE_SendCMD(BLEHandle,advertisingNameCMD,WAIT_CMD_RESP);
+		BLE_SendCMD(BLEHandle,"IA,08,3130",WAIT_CMD_RESP);
+		//BLE_SendCMD(BLEHandle,"IA,FF,10",WAIT_CMD_RESP);
 		BLE_SendCMD(BLEHandle,"A,3E8",WAIT_CMD_RESP);													//Start LP advertising after 30s timeout		
 	}
 	BLEHandle->connectionStatus = DISCONNECTED_LPADVERTISING;
@@ -450,10 +509,11 @@ RN4871_UARTStatusTypeDef BLE_SendData(BLE_TypeDef* BLEHandle, uint8_t* dataBuffe
 
 			BLE_EnterCMDMode(BLEHandle, WAIT_CMD_RESP);
 			BLE_SendCMD(BLEHandle,"IA,Z",WAIT_CMD_RESP);			
-			BLE_SendCMD(BLEHandle,"A",WAIT_CMD_RESP);			
+			BLE_SendCMD(BLEHandle,"A",WAIT_CMD_RESP);	
 			BLE_SendCMD(BLEHandle,"IA,01,06",WAIT_CMD_RESP);
 			string2hexString(advertisingNameCMD + 12,BLEHandle->macAddressString + 8);	
-			BLE_SendCMD(BLEHandle,advertisingNameCMD,WAIT_CMD_RESP);
+			BLE_SendCMD(BLEHandle,advertisingNameCMD,WAIT_CMD_RESP);	
+			BLE_SendCMD(BLEHandle,"IA,FF,01",WAIT_CMD_RESP);
 			
 			return BLE_ERROR;
 		}			

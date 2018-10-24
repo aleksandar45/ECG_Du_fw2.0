@@ -71,7 +71,7 @@ void mTimer_Stop(TIM_HandleTypeDef* timHandle, mTimerHandler_TypeDef * mTim){
 	HAL_TIM_Base_DeInit(timHandle);
 }
 
-void mTimer_TIM1_Start(mTimerHandler_TypeDef * mTim, uint16_t timeout){
+void mTimer_TIM1_Start(mTimerHandler_TypeDef * mTim, uint32_t timeout){
 	mTim->timer1_counter = 0;
 	mTim->timer1_timeout = timeout;
 	mTim->timer1_timeoutFlag = 0;

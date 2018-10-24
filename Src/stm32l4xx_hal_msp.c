@@ -385,7 +385,7 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)
   HAL_GPIO_DeInit(GPIOA, GPIO_PIN_1);
 	
 	// De-Initialize the DMA associated to transmission process 
-  HAL_DMA_DeInit(&hdmaUART_tx);
+ /* HAL_DMA_DeInit(&hdmaUART_tx);*/
 	
 /*	// De-Initialize the DMA associated to reception process 
   HAL_DMA_DeInit(&hdmaUART_rx);*/
@@ -518,10 +518,10 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef *spi){
 	HAL_GPIO_DeInit(GPIOA, GPIO_PIN_7);		//Configure SPI MOSI as alternate function
 	
 	// De-Initialize the DMA associated to reception process 
-	HAL_DMA_DeInit(&hdmaSPI_rx);
+	//HAL_DMA_DeInit(&hdmaSPI_rx);
 	
 	// De-Initialize the DMA associated to transmision process 
-	HAL_DMA_DeInit(&hdmaSPI_tx);
+	//HAL_DMA_DeInit(&hdmaSPI_tx);
 	
 }
 void HAL_RTC_MspInit(RTC_HandleTypeDef *hrtc)

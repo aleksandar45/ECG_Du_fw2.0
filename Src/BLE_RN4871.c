@@ -1,10 +1,13 @@
 #include "BLE_RN4871.h"
 char advertisingNameCMD[30] = "IA,09,524E2D";
-
-void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle,uint8_t onlyUARTInit){
+char advertisingBattCMD[] = "IA,08,303030";
+extern BLE_DFU_Typedef BLE_DFUHandle;
+	
+void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle,BLE_DFU_Typedef* bleDfuHandle,uint8_t onlyUARTInit){
 	uint16_t i;
 	
 	BLEHandle->uartHandle = uartHandle;
+	BLEHandle->dfuHandle = bleDfuHandle;
 	BLEHandle->connectionStatus = DISCONNECTED_ADVERTISING;
 	BLEHandle->bleStatus = BLE_OK;
 	BLEHandle->uartErrorExpected = 1;
@@ -22,7 +25,8 @@ void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle,uint8_t onl
 	
 	//=================Check BLE UART status============//
 	uartHandle->RxState =HAL_UART_STATE_READY;
-	mUART_Config(uartHandle,460800,UART_HWCONTROL_CTS);//UART_HWCONTROL_CTS
+	//mUART_Config(uartHandle,460800,UART_HWCONTROL_CTS);//UART_HWCONTROL_CTS	
+	mUART_Config(uartHandle,115200,UART_HWCONTROL_NONE);	
 	mUART_Receive_IT(uartHandle,BLEHandle->uartReceiveBuffer,200);
 		
 	if(onlyUARTInit) {
@@ -257,7 +261,7 @@ void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle,uint8_t onl
 	BLE_SendCMD(BLEHandle,"IA,Z",WAIT_CMD_RESP);			
 	BLE_SendCMD(BLEHandle,"A",WAIT_CMD_RESP);
 	BLE_SendCMD(BLEHandle,"IA,01,06",WAIT_CMD_RESP);
-	BLE_SendCMD(BLEHandle,"IA,08,313030",WAIT_CMD_RESP);
+	BLE_SendCMD(BLEHandle,"IA,08,303030",WAIT_CMD_RESP);
 	string2hexString(advertisingNameCMD + 12,BLEHandle->macAddressString + 8);	
 	BLE_SendCMD(BLEHandle,advertisingNameCMD,WAIT_CMD_RESP);	
 	
@@ -304,6 +308,10 @@ RN4871_UARTStatusTypeDef BLE_EnterCMDMode(BLE_TypeDef* BLEHandle, BLE_CMDWaitRes
 }
 RN4871_UARTStatusTypeDef BLE_EnterLPMode(BLE_TypeDef* BLEHandle){
 	uint8_t i;
+  char batteryString [] = "000";
+	value2DecimalString(batteryString, BLEHandle->batteryAdvPercentage);
+	string2hexString(advertisingBattCMD + 6,batteryString);
+	
 	if(HAL_GPIO_ReadPin(BT_CFG1_PORT,BT_CFG1_PIN) == GPIO_PIN_RESET){
 		BLE_SendCMD(BLEHandle,"K,1",WAIT_CMD_RESP);													//Kill active BLE connection	
 		if(BLE_ERROR != BLE_CheckStatusMessage(BLEHandle,5000)){
@@ -340,7 +348,7 @@ RN4871_UARTStatusTypeDef BLE_EnterLPMode(BLE_TypeDef* BLEHandle){
 			string2hexString(advertisingNameCMD + 12,BLEHandle->macAddressString + 8);	
 			BLE_SendCMD(BLEHandle,advertisingNameCMD,NO_WAIT_CMD_RESP);
 			HAL_Delay(60);
-			BLE_SendCMD(BLEHandle,"IA,08,3130",NO_WAIT_CMD_RESP);
+			BLE_SendCMD(BLEHandle,advertisingBattCMD,NO_WAIT_CMD_RESP);
 			//BLE_SendCMD(BLEHandle,"IA,FF,10",NO_WAIT_CMD_RESP);
 			HAL_Delay(60);
 			BLE_SendCMD(BLEHandle,"A,3E8",NO_WAIT_CMD_RESP);													//Start LP advertising after 30s timeout
@@ -370,19 +378,19 @@ RN4871_UARTStatusTypeDef BLE_EnterLPMode(BLE_TypeDef* BLEHandle){
 	
 	BLE_SendCMD(BLEHandle,"IA,Z",WAIT_CMD_RESP);	
 	BLE_SendCMD(BLEHandle,"IA,01,06",WAIT_CMD_RESP);
-	BLE_SendCMD(BLEHandle,"IA,08,3130",WAIT_CMD_RESP);
+	BLE_SendCMD(BLEHandle,advertisingBattCMD,WAIT_CMD_RESP);
 	string2hexString(advertisingNameCMD + 12,BLEHandle->macAddressString + 8);	
 	BLE_SendCMD(BLEHandle,advertisingNameCMD,WAIT_CMD_RESP);
 	//BLE_SendCMD(BLEHandle,"IA,FF,10",WAIT_CMD_RESP);
 	BLE_SendCMD(BLEHandle,"A,3E8",WAIT_CMD_RESP);																	//Start LP advertising after 30s timeout
 			
 	if(BLEHandle->bleStatus == BLE_ERROR){
-		BLE_Init(BLEHandle->uartHandle,BLEHandle,0);
+		BLE_Init(BLEHandle->uartHandle,BLEHandle,&BLE_DFUHandle,0);
 		BLE_SendCMD(BLEHandle,"IA,Z",WAIT_CMD_RESP);	
 		BLE_SendCMD(BLEHandle,"IA,01,06",WAIT_CMD_RESP);
 		string2hexString(advertisingNameCMD + 12,BLEHandle->macAddressString + 8);	
 		BLE_SendCMD(BLEHandle,advertisingNameCMD,WAIT_CMD_RESP);
-		BLE_SendCMD(BLEHandle,"IA,08,3130",WAIT_CMD_RESP);
+		BLE_SendCMD(BLEHandle,advertisingBattCMD,WAIT_CMD_RESP);
 		//BLE_SendCMD(BLEHandle,"IA,FF,10",WAIT_CMD_RESP);
 		BLE_SendCMD(BLEHandle,"A,3E8",WAIT_CMD_RESP);													//Start LP advertising after 30s timeout		
 	}
@@ -618,7 +626,16 @@ RN4871_UARTStatusTypeDef BLE_ParseAckOrAppMessage(BLE_TypeDef* BLEHandle, uint8_
 	}
 	BLEHandle->uartParseBuffer[i] = 0;
 	
-	if(BLEHandle->uartParseBuffer[0] == 'A'){
+	if(BLEHandle->uartParseBuffer[0] == ':'){
+		for(i=0;i<size;i++){
+			BLEHandle->dfuHandle->parseBuffer[i] = BLEHandle->uartParseBuffer[i];
+		}
+		BLEHandle->dfuHandle->parseBuffer[i] = 0;
+		BLEHandle->dfuHandle->messageSize = size;
+		BLEHandle->ackOrAppMessage.message = APP_DFU_PACKET;
+		BLEHandle->ackOrAppMessage.messageUpdated = 1;
+	}
+	else if(BLEHandle->uartParseBuffer[0] == 'A'){
 		if(mByteCmp(BLEHandle->uartParseBuffer,"AOK\r\n",5)==0){
 			BLEHandle->ackOrAppMessage.message = AOK;
 			BLEHandle->ackOrAppMessage.messageUpdated = 1;
@@ -664,9 +681,13 @@ RN4871_UARTStatusTypeDef BLE_ParseAckOrAppMessage(BLE_TypeDef* BLEHandle, uint8_
 			BLEHandle->ackOrAppMessage.message = APP_STAY;
 			BLEHandle->ackOrAppMessage.messageUpdated = 1;
 		}
-		else if(mByteCmp(BLEHandle->uartParseBuffer,"APP_DFU\r\n",7)==0){
+		else if(mByteCmp(BLEHandle->uartParseBuffer,"APP_DFU\r\n",9)==0){
 			BLEHandle->ackOrAppMessage.message = APP_DFU;
 			BLEHandle->ackOrAppMessage.messageUpdated = 1;
+		}
+		else if(mByteCmp(BLEHandle->uartParseBuffer,"APP_DFU_OTA\r\n",13)==0){
+			BLEHandle->ackOrAppMessage.message = APP_DFU_OTA;
+			BLEHandle->ackOrAppMessage.messageUpdated = 1;			
 		}
 	}
 	else if(BLEHandle->uartParseBuffer[0] == 'C'){
@@ -684,6 +705,152 @@ RN4871_UARTStatusTypeDef BLE_ParseAckOrAppMessage(BLE_TypeDef* BLEHandle, uint8_
 	else{
 		BLEHandle->bleStatus = BLE_ERROR;
 		BLEHandle->ErrorNumber = BLE_ACKAPP_MSG_ERROR;
+		return BLE_ERROR;
+	}
+	return BLE_OK;
+	
+}
+RN4871_UARTStatusTypeDef BLE_DFU_Init(BLE_TypeDef* BLEHandle){
+	FLASH_Erase(TEMP_PROGRAM_ADDRESS,TEMP_PROGRAM_ADDRESS + PROGRAM_SIZE - 1);
+	HAL_FLASH_Unlock();	
+	BLEHandle->dfuHandle->totalByteCount = 0;
+	BLEHandle->dfuHandle->newAddressH = 0;
+	BLEHandle->dfuHandle->dataRowIndex = 0;
+	BLEHandle->dfuHandle->flashAddress = TEMP_PROGRAM_ADDRESS;
+	BLEHandle->dfuHandle->dfuError = 0;	
+	BLEHandle->dfuHandle->dfuCompleted = 0;
+	return BLE_OK;
+}
+RN4871_UARTStatusTypeDef BLE_DFU_Process(BLE_TypeDef* BLEHandle){
+	uint32_t sumCRC;
+	uint16_t byteCount;
+	uint8_t tempByte;
+	uint16_t addressL;
+	uint32_t currAbsAddress;
+	uint8_t recordType;
+	uint16_t checkSum;
+	uint8_t i;
+	BLE_DFU_Typedef* pDFU = BLEHandle->dfuHandle;
+	uint64_t* src_addr = (uint64_t *) pDFU->dataRowBuffer;
+	
+	sumCRC = 0;
+	byteCount = char2byte(pDFU->parseBuffer+1);
+	sumCRC += byteCount;
+	
+	tempByte = char2byte(pDFU->parseBuffer+3);
+	sumCRC += tempByte;
+	addressL  = tempByte;
+	tempByte = char2byte(pDFU->parseBuffer+5);
+	sumCRC += tempByte;
+	addressL <<= 8;
+	addressL |= tempByte;
+	
+	recordType = char2byte(pDFU->parseBuffer+7);
+	sumCRC += recordType;
+	
+	if((pDFU->messageSize - 2)!= byteCount*2 + 11) {
+		pDFU->dfuError = 1;
+		return BLE_ERROR;
+	}
+	
+	switch (recordType){
+		case 0: 
+			if(!pDFU->newAddressH){							
+				currAbsAddress = pDFU->addressH;
+				currAbsAddress <<= 16;
+				currAbsAddress |= addressL;
+				if((pDFU->prevAbsAddress + pDFU->prevByteCount) != currAbsAddress){
+					pDFU->dfuError = 2;
+					return BLE_ERROR;
+				}
+			}
+			pDFU->prevByteCount = byteCount;
+			pDFU->prevAbsAddress = pDFU->addressH;
+			pDFU->prevAbsAddress <<= 16;
+			pDFU->prevAbsAddress |= addressL;
+			pDFU->totalByteCount += byteCount;
+			for(i=0;i<byteCount;i++){
+				pDFU->dataRowBuffer[pDFU->dataRowIndex] = char2byte(pDFU->parseBuffer + 9 + i*2);
+				sumCRC += pDFU->dataRowBuffer[pDFU->dataRowIndex++];
+				if(pDFU->dataRowIndex==8){
+					pDFU->dataRowIndex = 0;		
+					if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, pDFU->flashAddress, *src_addr) == HAL_OK)
+						pDFU->flashAddress = pDFU->flashAddress + 8;
+					else{
+						if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, pDFU->flashAddress, *src_addr) == HAL_OK)
+							pDFU->flashAddress = pDFU->flashAddress + 8;
+						else {
+							pDFU->dfuError = 3;
+							return BLE_ERROR;
+						}
+					}
+				}
+			}
+			pDFU->newAddressH = 0;
+			break;
+		case 1:
+			if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, pDFU->flashAddress, *src_addr) == HAL_OK)
+				pDFU->flashAddress = pDFU->flashAddress + 8;
+			else{
+				if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, pDFU->flashAddress, *src_addr) == HAL_OK)
+					pDFU->flashAddress = pDFU->flashAddress + 8;
+				else {
+					pDFU->dfuError = 4;
+					return BLE_ERROR;
+				}
+			}
+			//-----check total size with address field--//
+			if(pDFU->totalByteCount != (pDFU->prevAbsAddress + pDFU->prevByteCount - PROGRAM_ADDRESS)){
+			//if(totalByteCount != (prevAbsAddress + prevByteCount - 0x08000000)){
+				pDFU->dfuError = 5;
+				return BLE_ERROR;
+			}
+			//-----program DFU_STATUS_SECTOR---------//
+			FLASH_Erase(DFU_STATUS_SECTOR_ADDRESS,DFU_STATUS_SECTOR_ADDRESS + 2048 - 1);
+			HAL_FLASH_Unlock();
+			if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, DFU_STATUS_SECTOR_ADDRESS, (uint64_t) DFU_STATUS_FLAG) == HAL_OK){}
+			else{
+				if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, DFU_STATUS_SECTOR_ADDRESS, (uint64_t) DFU_STATUS_FLAG) == HAL_OK){}
+				else {
+					pDFU->dfuError = 6;
+					return BLE_ERROR;
+				}
+			}
+			if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, DFU_STATUS_SECTOR_ADDRESS + 8, (uint64_t) pDFU->totalByteCount) == HAL_OK){}							
+			else{
+				if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, DFU_STATUS_SECTOR_ADDRESS + 8, (uint64_t) pDFU->totalByteCount) == HAL_OK){}								
+				else {
+					pDFU->dfuError = 7;
+					return BLE_ERROR;
+				}
+			}			
+			HAL_FLASH_Lock();
+			
+			pDFU->dfuCompleted=1;			
+			
+			break;
+		case 4:			
+			pDFU->addressH = char2byte(pDFU->parseBuffer + 9);
+			sumCRC += pDFU->addressH;
+			pDFU->addressH <<=8;
+			pDFU->addressH |= char2byte(pDFU->parseBuffer + 11);
+			sumCRC += (pDFU->addressH & 0xFF);
+			pDFU->newAddressH = 1;
+			break;
+		case 5:	
+			for(i=0;i<byteCount;i++){
+				sumCRC += char2byte(pDFU->parseBuffer + 9 + i*2);
+			}
+			break;
+		default:
+			pDFU->dfuError = 8;
+			return BLE_ERROR;
+	}						
+	checkSum = char2byte(pDFU->parseBuffer + 9 + byteCount*2);
+	sumCRC = ~sumCRC;
+	sumCRC +=1;
+	if((sumCRC & 0xFF) != checkSum) {
+		pDFU->dfuError = 9;
 		return BLE_ERROR;
 	}
 	return BLE_OK;
@@ -877,6 +1044,31 @@ uint32_t hex2int(uint8_t* charArray, uint8_t size){
 		
 	}
 	return result;
+}
+
+uint16_t char2byte(uint8_t* string){
+	uint8_t out;
+	string[0] &= 0x7F;
+	string[1] &= 0x7F;
+
+	if((string[0]<='9') && (string[0]>='0')){
+		out <<=4;
+		out |= string[0] - '0';
+	}
+	else{
+		out <<=4;
+		out |= string[0] - 'A' + 10;
+	}
+	if((string[1]<='9') && (string[1]>='0')){
+		out <<=4;
+		out |= string[1] - '0';
+	}
+	else{
+		out <<=4;
+		out |= string[1] - 'A' + 10;
+	}
+	return out;
+		
 }
 
 #pragma push

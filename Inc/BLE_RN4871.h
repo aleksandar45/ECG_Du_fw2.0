@@ -22,6 +22,13 @@
 #define BLE_UART_ERROR						7
 #define BLE_ALL_MSG_ERROR					8
 
+// 64kB space reserved for program
+#define PROGRAM_SIZE								65536
+#define PROGRAM_ADDRESS 						0x08001000
+#define TEMP_PROGRAM_ADDRESS				0x08011000
+#define DFU_STATUS_SECTOR_ADDRESS		0x08021000
+#define DFU_STATUS_FLAG							0x13FA98BC259E326D
+
 // Types ------------------------------------------------------------------//
 typedef enum {
 	DISCONNECTED_ADVERTISING = 0,
@@ -87,7 +94,9 @@ typedef enum {
 	APP_OFF = 11,					//(APP_OFF+<CRLF>)							//App command - turn off device
 	APP_DOK = 12,					//(APP_DOK,xxxx+<CRLF>)					//App command - data packet received correctly, parameter is packetNumber(hex in ascii) 
 	APP_DNOK = 13,				//(APP_DNOK,xxxx+<CRLF>)				//App command - data packet not received correctly, parameter is packetNumber(hex in ascii)
-	APP_DFU = 14,					//(APP_DFU<CRLF>)								//App command - device firmware upgrade
+	APP_DFU = 14,					//(APP_DFU<CRLF>)								//App command - device firmware upgrade through USB
+	APP_DFU_OTA = 15,			//(APP_DFU_OTA<CRLF>						//App command - device firmware upgrade over the air (BLE)
+	APP_DFU_PACKET = 16,	//(:xxxxxxxxx<CRLF>							//App command - dfu packet received
 }RN4871orApp_RespCMDTypeDef;
 
 typedef struct{
@@ -124,10 +133,24 @@ typedef enum{
 	SEEK_TO_END = 0,
 	NO_SEEK_TO_END = 1,
 }BLE_UARTSeekTypeDef;
-
-typedef struct
-{	
+typedef struct{
+	uint8_t parseBuffer[200];												//Buffer where dfu packet is stored
+	uint16_t messageSize;														//Parse message size
+	uint16_t prevByteCount;													//Byte count in previous step detected
+	uint32_t totalByteCount;												//Total sum of data bytes in whole file
+	uint8_t newAddressH;														//Upper 16bit address packet detected
+	uint16_t addressH;															//Upper 16bit address
+	uint32_t prevAbsAddress;												//Absolute address in previous step detected
+	uint8_t dataRowBuffer[8];												//Parsed 64bit word that is going to be stored in flash memory
+	uint8_t dataRowIndex;														//Index variable for dataRowBuffer
+	uint32_t flashAddress;													//Current flash address
+	uint8_t dfuCompleted;														//Flag that specifies whether DFU is completed
+	uint8_t dfuError;																//DFU error code
+	
+}BLE_DFU_Typedef;
+typedef struct{	
 		UART_HandleTypeDef* uartHandle;								//UART periphery connected to BLE module
+		BLE_DFU_Typedef*	dfuHandle;									//DFU structure
 		uint32_t uartBaudRate;												//UART baud rate
 		uint32_t uartHWControl;												//Enable or disable UART hardware control
 		uint8_t	uartErrorExpected;										//If UART error is expected set this flag
@@ -159,12 +182,14 @@ typedef struct
 		uint16_t repeatDataPacketNumber;							//Number of packet that needs to be repeated
 		uint8_t repeatDataPacketCounter;							//This parameter counts number of received data transfering error acknowledges (APP_DNOK)
 		uint8_t connParamsUpdateCounter;							//This parameter counts number of connection parameter updates
+		uint8_t batteryAdvPercentage;
 	
 }BLE_TypeDef;
 
 
+
 // Functions ------------------------------------------------------------------//
-void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle, uint8_t onlyUARTInit);
+void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle,BLE_DFU_Typedef* bleDfuHandle,uint8_t onlyUARTInit);
 RN4871_UARTStatusTypeDef BLE_EnterCMDMode(BLE_TypeDef* BLEHandle, BLE_CMDWaitRespTypeDef waitCMDResponse);
 RN4871_UARTStatusTypeDef BLE_EnterLPMode(BLE_TypeDef* BLEHandle);
 RN4871_UARTStatusTypeDef BLE_ExitLPMode(BLE_TypeDef* BLEHandle);
@@ -172,18 +197,23 @@ RN4871_UARTStatusTypeDef BLE_SendCMD(BLE_TypeDef* BLEHandle, char* cmdString, BL
 RN4871_UARTStatusTypeDef BLE_SendData(BLE_TypeDef* BLEHandle, uint8_t* dataBuffer, uint16_t size);
 
 RN4871_UARTStatusTypeDef BLE_CheckStatusMessage(BLE_TypeDef* BLEHandle, uint32_t timeout);
-//RN4871_UARTStatusTypeDef BLE_ParseStatusMessage(BLE_TypeDef* BLEHandle);
-//RN4871_UARTStatusTypeDef BLE_ParseAckOrAppMessage(BLE_TypeDef* BLEHandle);
+RN4871_UARTStatusTypeDef BLE_ParseStatusMessage(BLE_TypeDef* BLEHandle, uint8_t* startPointer, uint8_t size);
+RN4871_UARTStatusTypeDef BLE_ParseAckOrAppMessage(BLE_TypeDef* BLEHandle, uint8_t* startPointer, uint8_t size);
+RN4871_UARTStatusTypeDef BLE_DFU_Init(BLE_TypeDef* BLEHandle);
+RN4871_UARTStatusTypeDef BLE_DFU_Process(BLE_TypeDef* BLEHandle);
+
+uint8_t compareUartMessage(BLE_TypeDef* BLEHandle, char* string, uint8_t size, BLE_UARTSeekTypeDef seekType);
+uint8_t checkUartMessage(BLE_TypeDef* BLEHandle, BLE_UARTSeekTypeDef seekType);
+
 uint8_t mByteCmp(uint8_t* pA, char* string, uint8_t size);
+uint16_t char2byte(uint8_t* string);
 void string2hexString(char* outputString, char* inputString);
 uint32_t hex2int(uint8_t* charArray, uint8_t size);
 void value2DecimalString(char* outputString, uint8_t value);
 void mDelay(uint32_t msDelay);
 
 
-uint8_t compareUartMessage(BLE_TypeDef* BLEHandle, char* string, uint8_t size, BLE_UARTSeekTypeDef seekType);
-uint8_t checkUartMessage(BLE_TypeDef* BLEHandle, BLE_UARTSeekTypeDef seekType);
-RN4871_UARTStatusTypeDef BLE_ParseStatusMessage(BLE_TypeDef* BLEHandle, uint8_t* startPointer, uint8_t size);
-RN4871_UARTStatusTypeDef BLE_ParseAckOrAppMessage(BLE_TypeDef* BLEHandle, uint8_t* startPointer, uint8_t size);
+
+
 
 #endif

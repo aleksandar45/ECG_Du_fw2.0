@@ -14,11 +14,11 @@ void mUART_Config(UART_HandleTypeDef *huart, uint32_t baudRate,uint32_t hwContro
   huart->Init.HwFlowCtl    = hwControl;//UART_HWCONTROL_NONE;		//UART_HWCONTROL_RTS_CTS
   huart->Init.Mode         = UART_MODE_TX_RX;
   huart->Init.OverSampling = UART_OVERSAMPLING_16;
-
+	
   if(HAL_UART_DeInit(huart) != HAL_OK)
   {
     //Error_Handler();
-  }  
+  }  		
   if(HAL_UART_Init(huart) != HAL_OK)
   {
     //Error_Handler();

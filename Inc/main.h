@@ -49,6 +49,7 @@
 #include "ECG_ADS1294.h"
 #include "BATT.h"
 #include "MPU6050.h"
+#include "Log.h"
 
 // Defines ------------------------------------------------------------------//
 #define DEBUG_MODE
@@ -145,18 +146,19 @@
 
 // Exported types ------------------------------------------------------------//
 typedef enum {
-	SYSTEM_INIT = 0,							//Complete system initialization 
-	SYSTEM_INIT_WITHOUT_BLE = 1,	//System initialization without BLE initialization
-	BLE_BATT_MEAS = 2,						//Only battery measurement folowed by standby state
-	BLE_WAIT_CONN = 3,						//Wait for BLE connection
-	BLE_WAIT_MLDP_AND_CONN_PARAMS = 4,   //Wait for BLE connection parameters update and notification enable on UART Transparent characteristic
-	ECG_INIT = 5,							//Initialize ECG module
-	ECG_WAIT_LEAD_ON = 6,			//Wait leads on status to start acquisition
-	BLE_WAIT_BATTERY_INF = 7,	//Wait some delay to send Battery information
-	BLE_WAIT_START_ACQ = 8,		//Wait start acquisition CMD
-	BLE_ACQ_TRANSFERING = 9,	//Transfering ECG data over BLE
+	SYSTEM_INIT = 0,											//Complete system initialization 
+	SYSTEM_INIT_WITHOUT_BLE = 1,					//System initialization without BLE initialization
+	BLE_BATT_MEAS = 2,										//Only battery measurement folowed by standby state
+	BLE_WAIT_CONN = 3,										//Wait for BLE connection
+	BLE_WAIT_MLDP_AND_CONN_PARAMS = 4,   	//Wait for BLE connection parameters update and notification enable on UART Transparent characteristic
+	ECG_INIT = 5,													//Initialize ECG module
+	ECG_WAIT_LEAD_ON = 6,									//Wait leads on status to start acquisition
+	BLE_WAIT_BATTERY_INF = 7,							//Wait some delay to send Battery information
+	BLE_WAIT_START_ACQ = 8,								//Wait start acquisition CMD
+	BLE_ACQ_TRANSFERING = 9,							//Transfering ECG data over BLE
 	BLE_ACQ_TRANSFERING_AND_STORING = 10,	//Transfering ECG data over BLE and storing packets in FLASH memory
-	BLE_MEMORY_TRANSFERING = 11,	//Transfering memorized data over BLE (missing packets)
+	BLE_MEMORY_TRANSFERING = 11,					//Transfering memorized data over BLE (missing packets)
+	BLE_DFU_OTA = 12,											//Over the air device firmware upgrade
 }ProgramStageTypeDef;
 
 // Exported constants --------------------------------------------------------//

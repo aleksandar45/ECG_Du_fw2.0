@@ -24,3 +24,17 @@ void RTC_Config(RTC_HandleTypeDef *rtcHandle)
     //Error_Handler(); 
   }
 }
+
+void RTC_Disable(RTC_HandleTypeDef *rtcHandle)
+{
+		if(__HAL_PWR_GET_FLAG(PWR_FLAG_WUFI) != RESET)
+  {
+    __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WUFI); 									  
+  }
+	HAL_RTCEx_DeactivateWakeUpTimer(rtcHandle);
+	if(HAL_RTC_DeInit(rtcHandle) != HAL_OK)
+  {
+    // Initialization Error 
+    //Error_Handler(); 
+  }
+}

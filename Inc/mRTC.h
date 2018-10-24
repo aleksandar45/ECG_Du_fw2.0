@@ -6,5 +6,6 @@
 
 // Functions ------------------------------------------------------------------//
 void RTC_Config(RTC_HandleTypeDef *rtcHandle);
+void RTC_Disable(RTC_HandleTypeDef *rtcHandle);
 
 #endif

@@ -42,7 +42,7 @@ typedef struct
 
 void mTimer_Config(TIM_HandleTypeDef* timHandle ,mTimerHandler_TypeDef * mTim);
 
-void mTimer_TIM1_Start(mTimerHandler_TypeDef * mTim, uint16_t timeout);
+void mTimer_TIM1_Start(mTimerHandler_TypeDef * mTim, uint32_t timeout);
 
 uint8_t mTimer_LBlinkError_Start(mTimerHandler_TypeDef * mTim, uint8_t errorNum, uint8_t repetitionNum);
 

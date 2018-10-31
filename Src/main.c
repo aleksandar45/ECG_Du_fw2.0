@@ -117,11 +117,13 @@ int main(void)
 	//		SCB->VTOR = ((uint32_t)0x08001000U);  //Vector Table Relocation in Internal FLASH 
 	//=====Configuration steps to build program on different memory location====//  
 
-  HAL_Init();
+  HAL_Init();	
 	
+  SystemClock_Config();	
+
+	//BLE_Init(&BLEUartHandle,&BLEHandle,&BLE_DFUHandle,0);
 	//while(HAL_GPIO_ReadPin(BT_CFG1_PORT,BT_CFG1_PIN) == GPIO_PIN_SET){}
 	
-  SystemClock_Config();		
 		
 		
 	programStage = SYSTEM_INIT;
@@ -131,12 +133,12 @@ int main(void)
 	__HAL_RCC_PWR_CLK_ENABLE();
 	
 	 // Check wakeup type
-  if (__HAL_PWR_GET_FLAG(PWR_FLAG_WUF2) != RESET)
+  if (__HAL_PWR_GET_FLAG(PWR_FLAG_WUF2) != RESET)							//BLE connection wakup	
   {
     __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WUF2);
 		programStage = SYSTEM_INIT_WITHOUT_BLE;
   }
-	if(__HAL_PWR_GET_FLAG(PWR_FLAG_WUFI) != RESET)
+	if(__HAL_PWR_GET_FLAG(PWR_FLAG_WUFI) != RESET)							//RTC timer wakeup
   {
     __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WUFI); 									  
 		programStage = SYSTEM_INIT;
@@ -173,6 +175,7 @@ else if(programStage == SYSTEM_INIT){
 	BLE_Init(&BLEUartHandle,&BLEHandle,&BLE_DFUHandle,0);
 
 	programStage = BLE_BATT_MEAS;
+	//programStage = BLE_WAIT_CONN;
 	startTIM1 = 1;
 }
 
@@ -254,11 +257,12 @@ else if(programStage == SYSTEM_INIT){
 				programStage = BLE_WAIT_START_ACQ;
 				startTIM1 = 1;
 			}
-			else {
-				if(programStage==BLE_BATT_MEAS){
+			else {		
+				if(BATTHandle.adcBufferFull){
 					batteryPercentage = BATT_CalculatePercentage(&BATTHandle);		
 					BLEHandle.batteryAdvPercentage = batteryPercentage;
 				}
+				
 				if(!BLEHandle.cmdMode){
 					BLE_EnterCMDMode(&BLEHandle, WAIT_CMD_RESP);
 				}				
@@ -504,6 +508,10 @@ else if(programStage == SYSTEM_INIT){
 					finalPacketNumber = BLEHandle.ackOrAppMessage.param1;
 				}
 				else if(BLEHandle.ackOrAppMessage.message==APP_OFF){
+					if(BATTHandle.adcBufferFull){
+						batteryPercentage = BATT_CalculatePercentage(&BATTHandle);		
+						BLEHandle.batteryAdvPercentage = batteryPercentage;
+					}
 					BLE_EnterCMDMode(&BLEHandle, WAIT_CMD_RESP);
 					BLE_EnterLPMode(&BLEHandle);
 					EnterStandByMODE();
@@ -561,19 +569,7 @@ else if(programStage == SYSTEM_INIT){
 			
 			//--------Prepare BLE transfering packet---------//
 			if((programStage == BLE_ACQ_TRANSFERING)||(programStage==BLE_ACQ_TRANSFERING_AND_STORING)){					
-				if(GYACCHandle.newDataAvailable){
-						GYACCHandle.newDataAvailable = 0;	
-						GYACC_CalculateAngles(&GYACCHandle,accPacket);
-						if(BLE_ERROR == BLE_SendData(&BLEHandle,accPacket,18)){
-							programStage = BLE_WAIT_CONN;
-							startTIM1 = 1;						
-#ifdef ECG_Du_v2_Board
-							ECG_Stop_Acquisition(&ECGHandle);
-							GYACC_Stop_Acquisition(&GYACCHandle);
-#endif						
-							EnterLowEnergyMODE();
-						}
-				}
+
 				if(!BLEHandle.dataOKWaiting){
 					if(ECGHandle.dataFIFOAvailable > 60){
 						
@@ -748,8 +744,22 @@ else if(programStage == SYSTEM_INIT){
 						}
 					}
 				}
+				if(GYACCHandle.newDataAvailable){
+					HAL_Delay(2);
+					GYACCHandle.newDataAvailable = 0;	
+					GYACC_CalculateAngles(&GYACCHandle,accPacket);
+					if(BLE_ERROR == BLE_SendData(&BLEHandle,accPacket,18)){
+						programStage = BLE_WAIT_CONN;
+						startTIM1 = 1;						
+#ifdef ECG_Du_v2_Board
+						ECG_Stop_Acquisition(&ECGHandle);
+						GYACC_Stop_Acquisition(&GYACCHandle);
+#endif						
+						EnterLowEnergyMODE();
+					}
+				}
 			}
-			//--------Prepare BLE transfering packet---------//
+			//--------Prepare BLE transfering packet---------//					
 			
 		}
 		

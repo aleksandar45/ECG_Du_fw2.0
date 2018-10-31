@@ -25,19 +25,12 @@ void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle,BLE_DFU_Typ
 	
 	//=================Check BLE UART status============//
 	uartHandle->RxState =HAL_UART_STATE_READY;
-	//mUART_Config(uartHandle,460800,UART_HWCONTROL_CTS);//UART_HWCONTROL_CTS	
-	mUART_Config(uartHandle,115200,UART_HWCONTROL_NONE);	
+	mUART_Config(uartHandle,460800,UART_HWCONTROL_CTS);//UART_HWCONTROL_CTS		
 	mUART_Receive_IT(uartHandle,BLEHandle->uartReceiveBuffer,200);
 		
 	if(onlyUARTInit) {
-		/*BLE_EnterCMDMode(BLEHandle, NO_WAIT_CMD_RESP);	
-		HAL_Delay(20);
-		if(compareUartMessage(BLEHandle,"CMD",3,SEEK_TO_END)!=0){
-			uartHandle->RxState =HAL_UART_STATE_READY;
-			mUART_Config(uartHandle,BLEHandle->uartBaudRate,UART_HWCONTROL_NONE);
-			mUART_Receive_IT(uartHandle,BLEHandle->uartReceiveBuffer,200);			
-		}
-		BLE_SendCMD(BLEHandle,"T,0006,000C,0000,0200",WAIT_CMD_RESP);						//Send preferable connection parameters*/
+		BLEHandle->uartBaudRate = 460800;
+		BLEHandle->uartHWControl = UART_HWCONTROL_CTS;
 		return;
 	}
 	//HAL_UART_Receive_DMA(uartHandle, BLEHandle->uartReceiveBuffer,200);
@@ -235,8 +228,8 @@ void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle,BLE_DFU_Typ
 	
 	BLE_SendCMD(BLEHandle,"ST,0006,000C,0000,0200",WAIT_CMD_RESP);	//Set preferable connection parameters
 	BLE_SendCMD(BLEHandle,"S-,RN",WAIT_CMD_RESP);						//Set serialized device name (RN_xxxx, where xxxx is last 2 bytes of MAC address)
-	BLE_SendCMD(BLEHandle,"SDF,1.2",WAIT_CMD_RESP);					//Set device firmware revision
-	BLE_SendCMD(BLEHandle,"SDH,v1.0",WAIT_CMD_RESP);				//Set device hardware revision
+	BLE_SendCMD(BLEHandle,"SDF,2.0",WAIT_CMD_RESP);					//Set device firmware revision
+	BLE_SendCMD(BLEHandle,"SDH,v2.1",WAIT_CMD_RESP);				//Set device hardware revision
 	BLE_SendCMD(BLEHandle,"SDM,RN4871",WAIT_CMD_RESP);			//Set device model name (BLE module name)
 	BLE_SendCMD(BLEHandle,"SDN,Heart Beam",WAIT_CMD_RESP);	//Set device manufacturer name
 	BLE_SendCMD(BLEHandle,"SDR,N/A",WAIT_CMD_RESP);					//Set device software revision name

@@ -22,11 +22,11 @@
 #define BLE_UART_ERROR						7
 #define BLE_ALL_MSG_ERROR					8
 
-// 64kB space reserved for program
-#define PROGRAM_SIZE								65536
+// 128kB space reserved for program
+#define PROGRAM_SIZE								131072
 #define PROGRAM_ADDRESS 						0x08001000
-#define TEMP_PROGRAM_ADDRESS				0x08011000
-#define DFU_STATUS_SECTOR_ADDRESS		0x08021000
+#define TEMP_PROGRAM_ADDRESS				0x08021000
+#define DFU_STATUS_SECTOR_ADDRESS		0x08041000
 #define DFU_STATUS_FLAG							0x13FA98BC259E326D
 
 // Types ------------------------------------------------------------------//

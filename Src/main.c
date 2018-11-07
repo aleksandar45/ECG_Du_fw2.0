@@ -87,6 +87,7 @@ uint8_t dataPacket[130] = "ANssD11D12D13S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1
 uint8_t batteryPacket[10] = "BAT:000\r\n";
 uint8_t accPacket[19] = "ACC:+000+111+222\r\n";
 uint8_t dfuErrPacket[11] = "DFU:ErrX\r\n";
+uint8_t errPacket[9] = "ERR:01\r\n";
 uint8_t batteryPercentage;
 //--------Variables for storing BLE data in packet-------//
 
@@ -744,8 +745,7 @@ else if(programStage == SYSTEM_INIT){
 						}
 					}
 				}
-				if(GYACCHandle.newDataAvailable){
-					HAL_Delay(2);
+				if(GYACCHandle.newDataAvailable){					
 					GYACCHandle.newDataAvailable = 0;	
 					GYACC_CalculateAngles(&GYACCHandle,accPacket);
 					if(BLE_ERROR == BLE_SendData(&BLEHandle,accPacket,18)){
@@ -756,7 +756,7 @@ else if(programStage == SYSTEM_INIT){
 						GYACC_Stop_Acquisition(&GYACCHandle);
 #endif						
 						EnterLowEnergyMODE();
-					}
+					}					
 				}
 			}
 			//--------Prepare BLE transfering packet---------//					

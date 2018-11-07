@@ -38,5 +38,4 @@ void Log_ReadData(Log_TypeDef  *LogHandle){
     Address = Address + 4;
 		i=i+3;
 	}
-	
 }

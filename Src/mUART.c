@@ -2,6 +2,7 @@
 
 extern BLE_TypeDef	BLEHandle;
 extern ProgramStageTypeDef programStage;
+extern Log_TypeDef  LogHandle;
 
 void mUART_Config(UART_HandleTypeDef *huart, uint32_t baudRate,uint32_t hwControl){
 	
@@ -127,6 +128,9 @@ static void mUART_RxISR_8BIT(UART_HandleTypeDef *huart)
 		
 		if(--huart->RxXferCount == 0){
 			huart->pRxBuffPtr  = BLEHandle.uartReceiveBuffer;
+			if(BLEHandle.uartBufferForward == 0){
+				huart->RxXferSize  = 10;
+			}
 			huart->RxXferSize  = 200;
 			huart->RxXferCount = 200;
 			BLEHandle.uartBufferForward ^=0x01;
@@ -198,7 +202,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *UartHandle)
 {
+	char message[] = "UART_Error_xxxxxxxxx";	
+	message[19] = (UartHandle->ErrorCode & 0x0F) + 48;
+	message[18] = ((UartHandle->ErrorCode >> 4) & 0x0F) + 48;
 	if(!BLEHandle.uartErrorExpected){
+		LogHandle.isError = 1;
+		Log_WriteData(&LogHandle, message);
     BLEHandle.bleStatus = BLE_ERROR;
 		BLEHandle.ErrorNumber = BLE_UART_ERROR;			
 	}

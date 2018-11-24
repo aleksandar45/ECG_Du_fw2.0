@@ -1,6 +1,7 @@
 #include "ECG_ADS1294.h"
 
 extern ECG_TypeDef ECGHandle;
+extern mTimerHandler_TypeDef  mTimHandle;
 
 void ECG_Init(SPI_HandleTypeDef* spiHandle, ECG_TypeDef* ECGHandle){
 	uint32_t read_value;
@@ -180,7 +181,9 @@ void ECG_Start_Acquisition(ECG_TypeDef* ECGHandle){
 	Send_Comand_ECG(ECGHandle->spiHandle,ECG_RDATAC_CMD);			// RDATAC command
 	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_4, GPIO_PIN_RESET);			//ECG CS = LOW
 
+#ifndef MCU_TEST_DATA
 	ECGHandle->acqStarted = 1;
+#endif
 }
 void ECG_Stop_Acquisition(ECG_TypeDef* ECGHandle){
 	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_4, GPIO_PIN_SET);				//ECG CS = HIGH
@@ -293,12 +296,18 @@ ECG_StatusTypeDef ECG_WriteFIFOData(ECG_TypeDef* ECGHandle, uint8_t* inputDataBu
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	if(GPIO_Pin == GPIO_PIN_8){
-		if(ECGHandle.acqStarted){
-			
-			HAL_SPI_Receive_DMA(ECGHandle.spiHandle,(uint8_t*) ECGHandle.spiDMAReceiveBufferPointer,12);
-					
+	if(GPIO_Pin == GPIO_PIN_3){
+		mTimer_LBlinkStatus_Stop(&mTimHandle);
+		mTimer_LBlinkError_Stop(&mTimHandle);
+		mTimHandle.lblinkUSBCharge = 1;
+	}
+	else if(GPIO_Pin == GPIO_PIN_8){
+		if(ECGHandle.acqStarted){			
+			HAL_SPI_Receive_DMA(ECGHandle.spiHandle,(uint8_t*) ECGHandle.spiDMAReceiveBufferPointer,12);					
 		}
+	}
+	else if(GPIO_Pin == GPIO_PIN_12){
+		ACC_Interrupt_Callback();
 	}
 }
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi){

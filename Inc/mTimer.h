@@ -38,6 +38,8 @@ typedef struct
 	uint8_t lblinkStatus_option;						//Specifies which led diode is blinking
 	uint8_t lblinkStatus_enabled;						//Specifies whether led blink status timer is enabled.
 	
+	uint8_t lblinkUSBCharge;
+	
 }mTimerHandler_TypeDef;
 
 void mTimer_Config(TIM_HandleTypeDef* timHandle ,mTimerHandler_TypeDef * mTim);
@@ -45,6 +47,7 @@ void mTimer_Config(TIM_HandleTypeDef* timHandle ,mTimerHandler_TypeDef * mTim);
 void mTimer_TIM1_Start(mTimerHandler_TypeDef * mTim, uint32_t timeout);
 
 uint8_t mTimer_LBlinkError_Start(mTimerHandler_TypeDef * mTim, uint8_t errorNum, uint8_t repetitionNum);
+void mTimer_LBlinkError_Stop(mTimerHandler_TypeDef * mTim);
 
 void mTimer_LBlinkStatus_Start(mTimerHandler_TypeDef * mTim, uint16_t offTimeout, uint8_t transfering);
 void mTimer_LBlinkStatus_Stop(mTimerHandler_TypeDef * mTim);

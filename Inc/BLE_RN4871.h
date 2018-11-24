@@ -133,6 +133,10 @@ typedef enum{
 	SEEK_TO_END = 0,
 	NO_SEEK_TO_END = 1,
 }BLE_UARTSeekTypeDef;
+typedef enum{
+	NO_ERROR_IGNORE = 0,
+	ERROR_IGNORE = 1,
+}BLE_ErrorIgnoreTypeDef;
 typedef struct{
 	uint8_t parseBuffer[200];												//Buffer where dfu packet is stored
 	uint16_t messageSize;														//Parse message size
@@ -190,10 +194,10 @@ typedef struct{
 
 // Functions ------------------------------------------------------------------//
 void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle,BLE_DFU_Typedef* bleDfuHandle,uint8_t onlyUARTInit);
-RN4871_UARTStatusTypeDef BLE_EnterCMDMode(BLE_TypeDef* BLEHandle, BLE_CMDWaitRespTypeDef waitCMDResponse);
+RN4871_UARTStatusTypeDef BLE_EnterCMDMode(BLE_TypeDef* BLEHandle, BLE_CMDWaitRespTypeDef waitCMDResponse, BLE_ErrorIgnoreTypeDef ignoreError);
 RN4871_UARTStatusTypeDef BLE_EnterLPMode(BLE_TypeDef* BLEHandle);
 RN4871_UARTStatusTypeDef BLE_ExitLPMode(BLE_TypeDef* BLEHandle);
-RN4871_UARTStatusTypeDef BLE_SendCMD(BLE_TypeDef* BLEHandle, char* cmdString, BLE_CMDWaitRespTypeDef waitCMDResponse);
+RN4871_UARTStatusTypeDef BLE_SendCMD(BLE_TypeDef* BLEHandle, char* cmdString, BLE_CMDWaitRespTypeDef waitCMDResponse,BLE_ErrorIgnoreTypeDef ignoreError);
 RN4871_UARTStatusTypeDef BLE_SendData(BLE_TypeDef* BLEHandle, uint8_t* dataBuffer, uint16_t size);
 
 RN4871_UARTStatusTypeDef BLE_CheckStatusMessage(BLE_TypeDef* BLEHandle, uint32_t timeout);

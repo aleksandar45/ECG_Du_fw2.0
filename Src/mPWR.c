@@ -3,6 +3,7 @@
 extern BLE_TypeDef	BLEHandle;
 extern ECG_TypeDef ECGHandle;
 extern BATT_TypeDef BATTHandle;
+extern Log_TypeDef LogHandle;
 
 extern TIM_HandleTypeDef    TimHandle;
 extern mTimerHandler_TypeDef  mTimHandle;
@@ -122,8 +123,12 @@ void EnterStandByMODE(void){
 
 	HAL_RTCEx_DeactivateWakeUpTimer(&RTCHandle);							// Disable all used wakeup sources	  
   __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);												// Clear all related wakeup flags
-	HAL_RTCEx_SetWakeUpTimer_IT(&RTCHandle, 0x001E, RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
-	
+	HAL_RTCEx_SetWakeUpTimer_IT(&RTCHandle, 0x0041, RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
+		
+	Log_WriteData(&LogHandle,"PWR/EnterStandBy_x_x");
+	if(LogHandle.isError == 1){
+		Log_WriteDataFlash(&LogHandle);
+	}	
   HAL_PWR_EnterSTANDBYMode();										// Request to enter STANDBY mode 
 	
 	//HAL_PWR_EnterSHUTDOWNMode();

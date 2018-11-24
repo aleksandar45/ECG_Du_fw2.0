@@ -7,7 +7,7 @@
 #include "main.h"
 
 // Defines -------------------------------------------------------------------//
-#define VDD_APPLIED                      			((uint32_t)2700)    // Value of analog voltage supply Vdda (unit: mV).
+#define VDD_APPLIED                      			((uint32_t)2358)    // Value of analog voltage supply Vdda (unit: mV).
 #define AD_RANGE_12BITS                   		((uint32_t)4095)    // Max value with a full range of 12 bits. 
 #define	LOW_BATTERY_LEVEL_LOW_VOLTAGE					((uint32_t)3000)		// Low level of battery voltage in mV; lower value. Low and high values are introduced to make hysteresis.
 #define LOW_BATTERY_LEVEL_HIGH_VOLTAGE				((uint32_t)3100)		// Low level of battery voltage in mV; higher value. Low and high values are introduced to make hysteresis.

@@ -83,8 +83,8 @@ void HardFault_Handler(void)
 {
   mTimer_LBlinkStatus_Stop(&mTimHandle);
 	mTimer_LBlinkError_Start(&mTimHandle,1,4);
-	// Go to infinite loop when Hard Fault exception occurs
-	while(1){}
+	
+	HAL_NVIC_SystemReset();
 }
 
 /**
@@ -96,8 +96,8 @@ void MemManage_Handler(void)
 {
   mTimer_LBlinkStatus_Stop(&mTimHandle);
 	mTimer_LBlinkError_Start(&mTimHandle,2,4);
-	// Go to infinite loop when Memory Manage exception occurs
-	while(1){}
+	
+	HAL_NVIC_SystemReset();
 }
 
 /**
@@ -109,8 +109,8 @@ void BusFault_Handler(void)
 {
   mTimer_LBlinkStatus_Stop(&mTimHandle);
 	mTimer_LBlinkError_Start(&mTimHandle,3,4);
-	// Go to infinite loop when Bus Fault exception occurs 
-	while(1){}
+	
+	HAL_NVIC_SystemReset();
 }
 
 /**
@@ -122,8 +122,8 @@ void UsageFault_Handler(void)
 {
   mTimer_LBlinkStatus_Stop(&mTimHandle);
 	mTimer_LBlinkError_Start(&mTimHandle,4,4);
-	// Go to infinite loop when Usage Fault exception occurs 
-	while(1){}
+	
+	HAL_NVIC_SystemReset();
 }
 
 /**
@@ -170,15 +170,36 @@ void SysTick_Handler(void)
 /*  file (startup_stm32l4xxxx.s).                                             */
 /******************************************************************************/
 
+
+#ifdef ECG_Du_v2_Board
+/**
+  * @brief  This function handles external line 3 interrupt request.
+  * @param  None
+  * @retval None
+  */
+void EXTI3_IRQHandler(void)
+{
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);			//BOOT pin
+}
+
+/**
+  * @brief  This function handles external lines 5 to 9 interrupt request.
+  * @param  None
+  * @retval None
+  */
+void EXTI9_5_IRQHandler(void)
+{
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_8);			//DRDY pin
+}
+
 /**
   * @brief  This function handles external lines 10 to 15 interrupt request.
   * @param  None
   * @retval None
   */
-#ifdef ECG_Du_v2_Board
-void EXTI9_5_IRQHandler(void)
+void EXTI15_10_IRQHandler(void)
 {
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_8);			//DRDY pin
+	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_12);			//ACC_INT pin
 }
 #endif
 

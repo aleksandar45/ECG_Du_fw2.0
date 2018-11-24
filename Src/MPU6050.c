@@ -82,19 +82,19 @@ void GYACC_Init(I2C_HandleTypeDef* i2cHandle, GYACC_TypeDef* GYACCHandle){
 //	I2CTx[1]=0x07;																					// Reset Gyro Acelerometer and Temperature sensor paths
 //  HAL_I2C_Master_Transmit(&I2CHandle, 0xD0, I2CTx, 2, 2);	
 	
-//	I2CTx[0]=MPU6050_RA_PWR_MGMT_2;													// PWR_MGMT_2(0x6C) register
-//	I2CTx[1]=0x07;																					// gyroscope disable
-//	status = HAL_I2C_Master_Transmit(GYACCHandle->i2cHandle0, 0xD0, I2CTx, 2, 2);
-//	HAL_Delay(1);
-//	status = HAL_I2C_Mem_Read(GYACCHandle->i2cHandle0, 0xD0, I2CTx[0], I2C_MEMADD_SIZE_8BIT, I2CRx, 1, 2);
-//	HAL_Delay(1);
-//	if(status!=HAL_OK) {
-//		GYACCHandle->gyAccStatus = GYACC_ERROR;
-//		GYACCHandle->ErrorNumber = GYACC_INIT1_ERROR;							
-//	}
+	I2CTx[0]=MPU6050_RA_PWR_MGMT_2;													// PWR_MGMT_2(0x6C) register
+	I2CTx[1]=0x3F;																					// accelerometer and gyroscope disable
+	status = HAL_I2C_Master_Transmit(GYACCHandle->i2cHandle, 0xD0, I2CTx, 2, 2);
+	HAL_Delay(1);
+	status = HAL_I2C_Mem_Read(GYACCHandle->i2cHandle, 0xD0, I2CTx[0], I2C_MEMADD_SIZE_8BIT, I2CRx, 1, 2);
+	HAL_Delay(1);
+	if(status!=HAL_OK) {
+		GYACCHandle->gyAccStatus = GYACC_ERROR;
+		GYACCHandle->ErrorNumber = GYACC_INIT1_ERROR;							
+	}
 	
 	I2CTx[0]=MPU6050_RA_SMPLRT_DIV;													// SMPLRT_DIV(0x19) register
-	I2CTx[1]=0x09;																					// Sample Rate = Gyroscope Output Rate(1kHz) / (1 + SMPLRT_DIV)
+	I2CTx[1]=0x63;																					// Sample Rate = Gyroscope Output Rate(1kHz) / (1 + SMPLRT_DIV)
 	status = HAL_I2C_Master_Transmit(GYACCHandle->i2cHandle, 0xD0, I2CTx, 2, 2);
 	HAL_Delay(1);	
 	status = HAL_I2C_Mem_Read(GYACCHandle->i2cHandle, 0xD0, I2CTx[0], I2C_MEMADD_SIZE_8BIT, I2CRx, 1, 2);
@@ -137,6 +137,17 @@ void GYACC_Init(I2C_HandleTypeDef* i2cHandle, GYACC_TypeDef* GYACCHandle){
 		GYACCHandle->ErrorNumber = GYACC_INIT1_ERROR;							
 	}
 	
+	I2CTx[0]=MPU6050_RA_INT_PIN_CFG;											// INT_PIN_CFG(0x37) register
+	I2CTx[1]=0x80;																				// Enable DataReady interrupt
+	status = HAL_I2C_Master_Transmit(GYACCHandle->i2cHandle, 0xD0, I2CTx, 2, 2);
+	HAL_Delay(1);	
+	status = HAL_I2C_Mem_Read(GYACCHandle->i2cHandle, 0xD0, I2CTx[0], I2C_MEMADD_SIZE_8BIT, I2CRx, 1, 2);
+	HAL_Delay(1);
+	if(status!=HAL_OK) {
+		GYACCHandle->gyAccStatus = GYACC_ERROR;
+		GYACCHandle->ErrorNumber = GYACC_INIT1_ERROR;							
+	}
+	
 	I2CTx[0]=MPU6050_RA_INT_ENABLE;												// INT_ENABLE(0x38) register
 	I2CTx[1]=0x01;																				// Enable DataReady interrupt
 	status = HAL_I2C_Master_Transmit(GYACCHandle->i2cHandle, 0xD0, I2CTx, 2, 2);
@@ -165,6 +176,17 @@ void GYACC_Start_Acquisition(GYACC_TypeDef* GYACCHandle){
 	HAL_StatusTypeDef status;
 	
 	if(GYACCHandle->gyAccStatus == GYACC_ERROR) return;
+	
+	I2CTx[0]=MPU6050_RA_PWR_MGMT_2;													// PWR_MGMT_2(0x6C) register
+	I2CTx[1]=0x00;																					// accelerometer and gyroscope enable
+	status = HAL_I2C_Master_Transmit(GYACCHandle->i2cHandle, 0xD0, I2CTx, 2, 2);
+	HAL_Delay(1);
+	status = HAL_I2C_Mem_Read(GYACCHandle->i2cHandle, 0xD0, I2CTx[0], I2C_MEMADD_SIZE_8BIT, I2CRx, 1, 2);
+	HAL_Delay(1);
+	if(status!=HAL_OK) {
+		GYACCHandle->gyAccStatus = GYACC_ERROR;
+		GYACCHandle->ErrorNumber = GYACC_INIT1_ERROR;							
+	}
 	
 	I2CTx[0]=MPU6050_RA_USER_CTRL;													// USER_CTRL(0x6A) register
 	I2CTx[1]=0x01;																					// reset signal paths and clear sensor registers
@@ -195,12 +217,27 @@ void GYACC_Start_Acquisition(GYACC_TypeDef* GYACCHandle){
 	
 }
 void GYACC_Stop_Acquisition(GYACC_TypeDef* GYACCHandle){
+	uint8_t I2CTx[6] ;
+	uint8_t I2CRx[6] ;
+	HAL_StatusTypeDef status;
+	
+	I2CTx[0]=MPU6050_RA_PWR_MGMT_2;													// PWR_MGMT_2(0x6C) register
+	I2CTx[1]=0x3F;																					// accelerometer and gyroscope disable
+	status = HAL_I2C_Master_Transmit(GYACCHandle->i2cHandle, 0xD0, I2CTx, 2, 2);
+	HAL_Delay(1);
+	status = HAL_I2C_Mem_Read(GYACCHandle->i2cHandle, 0xD0, I2CTx[0], I2C_MEMADD_SIZE_8BIT, I2CRx, 1, 2);
+	HAL_Delay(1);
+	if(status!=HAL_OK) {
+		GYACCHandle->gyAccStatus = GYACC_ERROR;
+		GYACCHandle->ErrorNumber = GYACC_INIT1_ERROR;							
+	}
+	
 	GYACCHandle->acqStarted = 0;
 		
 }
 void GYACC_ReadDataFromSensor(GYACC_TypeDef* GYACCHandle){
 	uint8_t I2CRx[6] ;
-	uint16_t x,y,z;
+	int16_t x,y,z;
 	double xD,yD,zD;
 	double rollD, pitchD;
 	
@@ -236,8 +273,7 @@ void GYACC_ReadDataFromSensor(GYACC_TypeDef* GYACCHandle){
 			else{
 				GYACCHandle->gyAccStatus = GYACC_ERROR;
 				GYACCHandle->ErrorNumber = GYACC_READ_DATA1_ERROR;
-			}				
-			GYACCHandle->newDataAvailable = 1;
+			}							
 		}
 		else{
 			

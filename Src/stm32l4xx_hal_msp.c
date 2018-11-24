@@ -87,7 +87,6 @@ void HAL_MspInit(void)
 	GPIO_InitStruct.Pull  = GPIO_PULLUP;
   GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_11,GPIO_PIN_RESET);
 	
 #endif
 	
@@ -98,7 +97,13 @@ void HAL_MspInit(void)
 	GPIO_InitStruct.Pull  = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
   HAL_GPIO_Init(LED_ERROR_PORT, &GPIO_InitStruct);
+
+#ifdef RN4871_Nucleo_Test_Board
 	HAL_GPIO_WritePin(LED_ERROR_PORT,LED_ERROR_PIN,GPIO_PIN_RESET);
+#else
+	HAL_GPIO_WritePin(LED_ERROR_PORT,LED_ERROR_PIN,GPIO_PIN_SET);
+#endif
+	
 	
 	// enable STATUS1 LED
 	LED_STATUS1_CLK_ENABLE();
@@ -116,7 +121,12 @@ void HAL_MspInit(void)
 	GPIO_InitStruct.Pull  = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
   HAL_GPIO_Init(LED_STATUS2_PORT, &GPIO_InitStruct);
+
+#ifdef RN4871_Nucleo_Test_Board
 	HAL_GPIO_WritePin(LED_STATUS2_PORT,LED_STATUS2_PIN,GPIO_PIN_RESET);
+#else
+	HAL_GPIO_WritePin(LED_STATUS2_PORT,LED_STATUS2_PIN,GPIO_PIN_SET);
+#endif
 	
 	// #BT_RESET
 	BT_RESET_CLK_ENABLE();
@@ -148,6 +158,7 @@ void HAL_MspInit(void)
 	BT_CFG3_CLK_ENABLE();
 	GPIO_InitStruct.Pin = BT_CFG3_PIN;
 	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	//GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull  = GPIO_PULLDOWN;
   GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
   HAL_GPIO_Init(BT_CFG3_PORT, &GPIO_InitStruct);
@@ -164,10 +175,12 @@ void HAL_MspInit(void)
 	// BOOT0 PIN
 	__HAL_RCC_GPIOH_CLK_ENABLE();
 	GPIO_InitStruct.Pin = GPIO_PIN_3;
-	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
 	GPIO_InitStruct.Pull  = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
-  HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);	
+	HAL_NVIC_SetPriority(EXTI3_IRQn, 0xE, 0);
+	HAL_NVIC_EnableIRQ(EXTI3_IRQn);
 
 #ifdef ECG_Du_v2_Board
 		//BT_UART_RX_IND
@@ -178,6 +191,7 @@ void HAL_MspInit(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET);
+
 	
 	//#BT_TEST_MODE
 	__HAL_RCC_GPIOB_CLK_ENABLE();
@@ -205,7 +219,6 @@ void HAL_MspInit(void)
 	GPIO_InitStruct.Pull  = GPIO_PULLUP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);	
-	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_14, GPIO_PIN_SET);
 	HAL_NVIC_SetPriority(EXTI9_5_IRQn, 2, 2);
 	HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 	
@@ -224,6 +237,15 @@ void HAL_MspInit(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);	
 	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10, GPIO_PIN_SET);
+	
+	// ACC_INT pin
+	GPIO_InitStruct.Pin = GPIO_PIN_12;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+	GPIO_InitStruct.Pull  = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);	
+	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 3, 4);
+	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 	
 	// M_BAT_EN pin
 		__HAL_RCC_GPIOB_CLK_ENABLE();
@@ -373,7 +395,7 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)
   __HAL_RCC_USART2_FORCE_RESET();
   __HAL_RCC_USART2_RELEASE_RESET();
 	
-
+/*
   // Disable peripherals and GPIO Clocks 
   // Configure BT_UART_TX as alternate function
   HAL_GPIO_DeInit(GPIOA, GPIO_PIN_3);
@@ -383,6 +405,7 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)
   HAL_GPIO_DeInit(GPIOA, GPIO_PIN_0);
   // Configure BT_UART_CTS as alternate function 
   HAL_GPIO_DeInit(GPIOA, GPIO_PIN_1);
+	*/
 	
 	// De-Initialize the DMA associated to transmission process 
  /* HAL_DMA_DeInit(&hdmaUART_tx);*/
@@ -523,6 +546,53 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef *spi){
 	// De-Initialize the DMA associated to transmision process 
 	//HAL_DMA_DeInit(&hdmaSPI_tx);
 	
+}
+void HAL_I2C_MspInit(I2C_HandleTypeDef *i2c){
+	GPIO_InitTypeDef  GPIO_InitStruct;
+  RCC_PeriphCLKInitTypeDef  RCC_PeriphCLKInitStruct;
+  
+	if(i2c->Instance == I2C2){
+		// Configure the I2C clock source. The clock is derived from the SYSCLK //
+		RCC_PeriphCLKInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C2;
+		RCC_PeriphCLKInitStruct.I2c2ClockSelection = RCC_I2C2CLKSOURCE_SYSCLK;
+		HAL_RCCEx_PeriphCLKConfig(&RCC_PeriphCLKInitStruct);
+
+		//I2C2 clock enable
+		__HAL_RCC_I2C2_CLK_ENABLE();
+		
+		//I2C2 GPIO port clock enable	
+		__HAL_RCC_GPIOB_CLK_ENABLE();
+		
+		//ACC_SCL GPIO pin configuration  
+		GPIO_InitStruct.Pin       = GPIO_PIN_10;
+		GPIO_InitStruct.Mode      = GPIO_MODE_AF_OD;
+		//GPIO_InitStruct.Mode      = GPIO_MODE_OUTPUT_PP;
+		GPIO_InitStruct.Pull      = GPIO_PULLUP;
+		GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
+		GPIO_InitStruct.Alternate = GPIO_AF4_I2C2;
+		HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+		//HAL_GPIO_WritePin(GPIOB,GPIO_PIN_10,GPIO_PIN_RESET);
+		 
+		//ACC_SCL GPIO pin configuration  
+		GPIO_InitStruct.Pin 			= GPIO_PIN_11;
+		GPIO_InitStruct.Mode      = GPIO_MODE_AF_OD;
+		//GPIO_InitStruct.Mode      = GPIO_MODE_OUTPUT_PP;
+		GPIO_InitStruct.Alternate = GPIO_AF4_I2C2;
+		GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
+		HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+		//HAL_GPIO_WritePin(GPIOB,GPIO_PIN_11,GPIO_PIN_RESET);
+	}
+}
+void HAL_I2C_MspDeInit(I2C_HandleTypeDef *i2c){
+	if(i2c->Instance == I2C2){
+		//	Reset peripherals
+		__HAL_RCC_I2C2_FORCE_RESET();
+		__HAL_RCC_I2C2_RELEASE_RESET();
+		
+		// Disable peripherals and GPIO Clocks
+		HAL_GPIO_DeInit(GPIOB, GPIO_PIN_10);		//Configure ACC_SCL as alternate function
+		HAL_GPIO_DeInit(GPIOB, GPIO_PIN_11);		//Configure ACC_SDA as alternate function		
+	}
 }
 void HAL_RTC_MspInit(RTC_HandleTypeDef *hrtc)
 {

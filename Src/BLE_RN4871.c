@@ -261,7 +261,7 @@ void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle,BLE_DFU_Typ
 	BLE_SendCMD(BLEHandle,"SDM,RN4871",WAIT_CMD_RESP,NO_ERROR_IGNORE);			//Set device model name (BLE module name)
 	BLE_SendCMD(BLEHandle,"SDN,Heart Beam",WAIT_CMD_RESP,NO_ERROR_IGNORE);	//Set device manufacturer name
 	BLE_SendCMD(BLEHandle,"SDR,N/A",WAIT_CMD_RESP,NO_ERROR_IGNORE);					//Set device software revision name
-	BLE_SendCMD(BLEHandle,"SDS,1000-06",WAIT_CMD_RESP,NO_ERROR_IGNORE);			//Set device serial number name
+	BLE_SendCMD(BLEHandle,"SDS,1000-00",WAIT_CMD_RESP,NO_ERROR_IGNORE);			//Set device serial number name
 	
 	BLEHandle->uartErrorExpected = 1;
 	HAL_GPIO_WritePin(BT_RESET_PORT,BT_RESET_PIN,GPIO_PIN_RESET);				//Hardware Reset					

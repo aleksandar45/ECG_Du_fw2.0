@@ -61,7 +61,6 @@ static DMA_HandleTypeDef hdmaUART_rx;
 void HAL_MspInit(void)
 {
 	GPIO_InitTypeDef  GPIO_InitStruct;
-	uint8_t USBCharging = 0;
 	
 	// BOOT0 PIN
 	__HAL_RCC_GPIOH_CLK_ENABLE();
@@ -73,9 +72,6 @@ void HAL_MspInit(void)
 	HAL_NVIC_SetPriority(EXTI3_IRQn, 0xE, 0);
 	HAL_NVIC_EnableIRQ(EXTI3_IRQn);
 	
-	if(HAL_GPIO_ReadPin(GPIOH,GPIO_PIN_3) == GPIO_PIN_SET) {
-		USBCharging = 1;
-	}
 	
 #ifdef RN4871_Nucleo_Test_Board
 	__HAL_RCC_GPIOC_CLK_ENABLE();

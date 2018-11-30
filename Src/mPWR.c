@@ -127,7 +127,7 @@ void EnterStandByMODE(void){
 	if(BLEHandle.shorterWakeupTimeout)
 		HAL_RTCEx_SetWakeUpTimer_IT(&RTCHandle, 0x001E, RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
 	else
-		HAL_RTCEx_SetWakeUpTimer_IT(&RTCHandle, 0x0041, RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
+		HAL_RTCEx_SetWakeUpTimer_IT(&RTCHandle, 0x0E10, RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
 		
 	Log_WriteData(&LogHandle,"PWR/EnterStandBy_x_x");
 	if(LogHandle.isError == 1){

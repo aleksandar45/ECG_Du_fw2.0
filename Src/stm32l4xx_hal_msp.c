@@ -61,6 +61,21 @@ static DMA_HandleTypeDef hdmaUART_rx;
 void HAL_MspInit(void)
 {
 	GPIO_InitTypeDef  GPIO_InitStruct;
+	uint8_t USBCharging = 0;
+	
+	// BOOT0 PIN
+	__HAL_RCC_GPIOH_CLK_ENABLE();
+	GPIO_InitStruct.Pin = GPIO_PIN_3;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Pull  = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
+  HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);	
+	HAL_NVIC_SetPriority(EXTI3_IRQn, 0xE, 0);
+	HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+	
+	if(HAL_GPIO_ReadPin(GPIOH,GPIO_PIN_3) == GPIO_PIN_SET) {
+		USBCharging = 1;
+	}
 	
 #ifdef RN4871_Nucleo_Test_Board
 	__HAL_RCC_GPIOC_CLK_ENABLE();
@@ -90,43 +105,45 @@ void HAL_MspInit(void)
 	
 #endif
 	
+
 	// enable ERROR LED
 	LED_ERROR_CLK_ENABLE();
 	GPIO_InitStruct.Pin = LED_ERROR_PIN;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull  = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
-  HAL_GPIO_Init(LED_ERROR_PORT, &GPIO_InitStruct);
+	GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
+	HAL_GPIO_Init(LED_ERROR_PORT, &GPIO_InitStruct);
 
 #ifdef RN4871_Nucleo_Test_Board
 	HAL_GPIO_WritePin(LED_ERROR_PORT,LED_ERROR_PIN,GPIO_PIN_RESET);
 #else
 	HAL_GPIO_WritePin(LED_ERROR_PORT,LED_ERROR_PIN,GPIO_PIN_SET);
 #endif
-	
-	
+		
+		
 	// enable STATUS1 LED
 	LED_STATUS1_CLK_ENABLE();
 	GPIO_InitStruct.Pin = LED_STATUS1_PIN;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull  = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
-  HAL_GPIO_Init(LED_STATUS1_PORT, &GPIO_InitStruct);
-	HAL_GPIO_WritePin(LED_STATUS1_PORT,LED_STATUS1_PIN,GPIO_PIN_SET);
+	GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
+	HAL_GPIO_Init(LED_STATUS1_PORT, &GPIO_InitStruct);
+	HAL_GPIO_WritePin(LED_STATUS1_PORT,LED_STATUS1_PIN,GPIO_PIN_RESET);
 	
 	// enable STATUS2 LED
 	LED_STATUS2_CLK_ENABLE();
 	GPIO_InitStruct.Pin = LED_STATUS2_PIN;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull  = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
-  HAL_GPIO_Init(LED_STATUS2_PORT, &GPIO_InitStruct);
+	GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
+	HAL_GPIO_Init(LED_STATUS2_PORT, &GPIO_InitStruct);
 
 #ifdef RN4871_Nucleo_Test_Board
 	HAL_GPIO_WritePin(LED_STATUS2_PORT,LED_STATUS2_PIN,GPIO_PIN_RESET);
 #else
 	HAL_GPIO_WritePin(LED_STATUS2_PORT,LED_STATUS2_PIN,GPIO_PIN_SET);
 #endif
+	
 	
 	// #BT_RESET
 	BT_RESET_CLK_ENABLE();
@@ -170,19 +187,18 @@ void HAL_MspInit(void)
 	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	GPIO_InitStruct.Pull  = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);	
-	
-	// BOOT0 PIN
-	__HAL_RCC_GPIOH_CLK_ENABLE();
-	GPIO_InitStruct.Pin = GPIO_PIN_3;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-	GPIO_InitStruct.Pull  = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
-  HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);	
-	HAL_NVIC_SetPriority(EXTI3_IRQn, 0xE, 0);
-	HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);		
 
 #ifdef ECG_Du_v2_Board
+
+	// EN_REG pin
+	GPIO_InitStruct.Pin = GPIO_PIN_15;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull  = GPIO_PULLDOWN;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);	
+	HAL_GPIO_WritePin(GPIOB,GPIO_PIN_15, GPIO_PIN_SET);
+	
 		//BT_UART_RX_IND
 	__HAL_RCC_GPIOA_CLK_ENABLE();
 	GPIO_InitStruct.Pin = GPIO_PIN_15;
@@ -264,13 +280,7 @@ void HAL_MspInit(void)
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);	
 	HAL_GPIO_WritePin(GPIOB,GPIO_PIN_9, GPIO_PIN_SET);
 	
-	// EN_REG pin
-	GPIO_InitStruct.Pin = GPIO_PIN_15;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull  = GPIO_PULLDOWN;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);	
-	HAL_GPIO_WritePin(GPIOB,GPIO_PIN_15, GPIO_PIN_SET);
+	
 	
 #endif
 }

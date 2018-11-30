@@ -185,25 +185,19 @@ void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle,BLE_DFU_Typ
 	HAL_GPIO_WritePin(BT_RESET_PORT,BT_RESET_PIN,GPIO_PIN_RESET);				//Hardware Reset	
 	Log_WriteData(&LogHandle, "BLE/Init/Stage_4_0_0");
 	HAL_Delay(1);
-	Log_WriteData(&LogHandle, "BLE/Init/Stage_4_0_1");
 	HAL_GPIO_WritePin(BT_RESET_PORT,BT_RESET_PIN,GPIO_PIN_SET);
-	Log_WriteData(&LogHandle, "BLE/Init/Stage_4_0_2");
 	HAL_Delay(50);
 	BLEHandle->uartErrorExpected = 0;
 	
 	BLEHandle->uartBufferForward = 1;
 	BLEHandle->uartDataAvailable = 0;
 	BLEHandle->uartBufferReadPointer = BLEHandle->uartReceiveBuffer;
-	Log_WriteData(&LogHandle, "BLE/Init/Stage_4_0_3");
 	uartHandle->RxState =HAL_UART_STATE_READY;
-	Log_WriteData(&LogHandle, "BLE/Init/Stage_4_0_4");
 	mUART_Config(uartHandle,BLEHandle->uartBaudRate,BLEHandle->uartHWControl);
-	Log_WriteData(&LogHandle, "BLE/Init/Stage_4_0_5");
 	mUART_Receive_IT(uartHandle,BLEHandle->uartReceiveBuffer,200);
-	Log_WriteData(&LogHandle, "BLE/Init/Stage_4_0_6");
 	HAL_Delay(450);
 	
-	Log_WriteData(&LogHandle, "BLE/Init/Stage_4_0_7");
+	Log_WriteData(&LogHandle, "BLE/Init/Stage_4_0_1");
 
 	if(compareUartMessage(BLEHandle,"%REBOOT#",8,SEEK_TO_END)!=0){			
 		BLEHandle->bleStatus = BLE_ERROR;
@@ -218,7 +212,8 @@ void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle,BLE_DFU_Typ
 	
 	//=================Initialize BLE module============//
 	BLE_EnterCMDMode(BLEHandle, WAIT_CMD_RESP,ERROR_IGNORE);
-	
+	HAL_Delay(20);	
+	Log_WriteData(&LogHandle, "BLE/Init/Stage_4_0_2");
 	//--------------SR cmd - Set supported feature------------//
 		//0x8000 Enable Flow Control
 		//0x4000 No Prompt
@@ -234,10 +229,12 @@ void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle,BLE_DFU_Typ
 		//0x0008 Command Mode Guard
 		//-------------------------------------------------------//
 	if(BLEHandle->uartHWControl== UART_HWCONTROL_CTS){			//HW control		
-		BLE_SendCMD(BLEHandle,"SR,C000",WAIT_CMD_RESP,NO_ERROR_IGNORE);				
+		BLE_SendCMD(BLEHandle,"SR,C000",WAIT_CMD_RESP,NO_ERROR_IGNORE);		
+		Log_WriteData(&LogHandle, "BLE/Init/Stage_4_0_3");
 	}
 	else{																												//No HW control
 		BLE_SendCMD(BLEHandle,"SR,4000",WAIT_CMD_RESP,NO_ERROR_IGNORE);
+		Log_WriteData(&LogHandle, "BLE/Init/Stage_4_0_4");
 		
 	}
 	
@@ -294,6 +291,7 @@ void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle,BLE_DFU_Typ
 
 	
 	BLE_EnterCMDMode(BLEHandle, WAIT_CMD_RESP,NO_ERROR_IGNORE);
+	HAL_Delay(20);
 	BLE_SendCMD(BLEHandle,"IA,Z",WAIT_CMD_RESP,NO_ERROR_IGNORE);			
 	BLE_SendCMD(BLEHandle,"A",WAIT_CMD_RESP,NO_ERROR_IGNORE);
 	BLE_SendCMD(BLEHandle,"IA,01,06",WAIT_CMD_RESP,NO_ERROR_IGNORE);
@@ -311,7 +309,11 @@ RN4871_UARTStatusTypeDef BLE_EnterCMDMode(BLE_TypeDef* BLEHandle, BLE_CMDWaitRes
 	BLEHandle->ackOrAppMessage.messageUpdated = 0;
 	
 	HAL_Delay(3);
-	HAL_UART_Transmit_DMA(BLEHandle->uartHandle,message,3);	
+	HAL_UART_Transmit_DMA(BLEHandle->uartHandle,message,1);	
+	HAL_Delay(3);
+	HAL_UART_Transmit_DMA(BLEHandle->uartHandle,message,1);	
+	HAL_Delay(3);
+	HAL_UART_Transmit_DMA(BLEHandle->uartHandle,message,1);	
 	HAL_Delay(3);
 	
 	
@@ -323,6 +325,7 @@ RN4871_UARTStatusTypeDef BLE_EnterCMDMode(BLE_TypeDef* BLEHandle, BLE_CMDWaitRes
 				if(ignoreError==NO_ERROR_IGNORE){
 					BLEHandle->bleStatus = BLE_ERROR;
 					BLEHandle->ErrorNumber =  BLE_ENTER_CMD_MODE_ERROR;
+					Log_WriteData(&LogHandle, "BLE/SendCMD/timeout_");
 				}
 				else{
 					BLE_SendCMD(BLEHandle,"K,1",WAIT_CMD_RESP,ERROR_IGNORE);		//send dummy command (means BLE already in CMD mode)
@@ -331,6 +334,7 @@ RN4871_UARTStatusTypeDef BLE_EnterCMDMode(BLE_TypeDef* BLEHandle, BLE_CMDWaitRes
 			}
 		}
 		if(BLEHandle->ackOrAppMessage.message != CMD){
+			Log_WriteData(&LogHandle, "BLE/SendCMD/resp_err");
 			if(ignoreError==NO_ERROR_IGNORE){
 				BLEHandle->bleStatus = BLE_ERROR;
 				BLEHandle->ErrorNumber =  BLE_ENTER_CMD_MODE_ERROR;
@@ -541,17 +545,20 @@ RN4871_UARTStatusTypeDef BLE_EnterLPMode(BLE_TypeDef* BLEHandle){
 			
 			if(compareUartMessage(BLEHandle,"%REBOOT",7,SEEK_TO_END)!=0){	
 				//HAL_NVIC_SystemReset();
+				BLEHandle->shorterWakeupTimeout = 1;
 				return BLE_ERROR;
 			}						
 		}
-		else{			
+		else{						
 			//HAL_NVIC_SystemReset();	
+			BLEHandle->shorterWakeupTimeout = 1;
 			return BLE_ERROR;
 		}	
 	}
 	BLEHandle->uartErrorExpected = 0;
 	
 	BLE_EnterCMDMode(BLEHandle, WAIT_CMD_RESP,ERROR_IGNORE);
+	HAL_Delay(20);
 	
 	BLE_SendCMD(BLEHandle,"D",NO_WAIT_CMD_RESP,NO_ERROR_IGNORE);								//Take BLE module information
 	HAL_Delay(350);
@@ -571,6 +578,7 @@ RN4871_UARTStatusTypeDef BLE_EnterLPMode(BLE_TypeDef* BLEHandle){
 		Log_WriteData(&LogHandle, "BLE/LP_Ent/Stage_1_2");
 		BLEHandle->macAddressString[0]=0;
 		strcpy(BLEHandle->macAddressString,"D0D0D0D0D0D0");
+		BLEHandle->shorterWakeupTimeout = 1;
 	}
 	compareUartMessage(BLEHandle,"Name",4,SEEK_TO_END);														//dummy clear
 	
@@ -582,7 +590,7 @@ RN4871_UARTStatusTypeDef BLE_EnterLPMode(BLE_TypeDef* BLEHandle){
 	string2hexString(advertisingNameCMD + 12,BLEHandle->macAddressString + 8);	
 	BLE_SendCMD(BLEHandle,advertisingNameCMD,WAIT_CMD_RESP,NO_ERROR_IGNORE);
 	//BLE_SendCMD(BLEHandle,"IA,FF,10",WAIT_CMD_RESP,NO_ERROR_IGNORE);
-	BLE_SendCMD(BLEHandle,"A,3E8",WAIT_CMD_RESP,NO_ERROR_IGNORE);																	//Start LP advertising after 30s timeout
+	BLE_SendCMD(BLEHandle,"A,3E8",WAIT_CMD_RESP,NO_ERROR_IGNORE);																	//Start LP advertising after 30s timeout																
 			
 	if(BLEHandle->bleStatus == BLE_ERROR){
 		Log_WriteData(&LogHandle, "BLE/LP_Ent/Stage_2_1");
@@ -594,6 +602,7 @@ RN4871_UARTStatusTypeDef BLE_EnterLPMode(BLE_TypeDef* BLEHandle){
 		BLE_SendCMD(BLEHandle,advertisingBattCMD,WAIT_CMD_RESP,NO_ERROR_IGNORE);
 		//BLE_SendCMD(BLEHandle,"IA,FF,10",WAIT_CMD_RESP,NO_ERROR_IGNORE);
 		BLE_SendCMD(BLEHandle,"A,3E8",WAIT_CMD_RESP,NO_ERROR_IGNORE);													//Start LP advertising after 30s timeout		
+		BLEHandle->shorterWakeupTimeout = 1;
 	}
 	BLEHandle->connectionStatus = DISCONNECTED_LPADVERTISING;
 	
@@ -622,8 +631,15 @@ RN4871_UARTStatusTypeDef BLE_ExitLPMode(BLE_TypeDef* BLEHandle){
 
 RN4871_UARTStatusTypeDef BLE_SendCMD(BLE_TypeDef* BLEHandle, char* cmdString, BLE_CMDWaitRespTypeDef waitCMDResponse,BLE_ErrorIgnoreTypeDef ignoreError){
 	char cr[1] = {0x0D};
+	char messageTimeout[] =  "BLE/SendCmd/xxx_Time";
+	char messageErrAck[] =   "BLE/SendCmd/xxx_Err_";
+	
 	uint8_t i;
 	
+	for(i=0;i<3;i++){
+		messageTimeout[12+i] = cmdString[i];
+		messageErrAck[12+i] = cmdString[i];
+	}
 	for(i=0; i<200;i++){
 		if(cmdString[i]==0) break;
 		BLEHandle->uartTransmitBuffer[i] = cmdString[i];
@@ -658,7 +674,8 @@ RN4871_UARTStatusTypeDef BLE_SendCMD(BLE_TypeDef* BLEHandle, char* cmdString, BL
 			if(BLEHandle->CMDTimeoutCounter >= 500){			//receive timeout occured	
 				if(ignoreError == NO_ERROR_IGNORE){
 					BLEHandle->bleStatus = BLE_ERROR;
-					BLEHandle->ErrorNumber = BLE_SEND_CMD_ERROR;
+					BLEHandle->ErrorNumber = BLE_SEND_CMD_ERROR;					
+					Log_WriteData(&LogHandle, messageTimeout);
 				}
 				return BLE_ERROR;
 			}
@@ -668,6 +685,7 @@ RN4871_UARTStatusTypeDef BLE_SendCMD(BLE_TypeDef* BLEHandle, char* cmdString, BL
 			if(ignoreError == NO_ERROR_IGNORE){
 				BLEHandle->bleStatus = BLE_ERROR;
 				BLEHandle->ErrorNumber = BLE_SEND_CMD_ERROR;
+				Log_WriteData(&LogHandle, messageErrAck);
 			}
 			return BLE_ERROR;
 		}
@@ -725,6 +743,7 @@ RN4871_UARTStatusTypeDef BLE_SendData(BLE_TypeDef* BLEHandle, uint8_t* dataBuffe
 			BLEHandle->statusMessage.messageUpdated =0;
 
 			BLE_EnterCMDMode(BLEHandle, WAIT_CMD_RESP, ERROR_IGNORE);
+			HAL_Delay(20);
 			BLE_SendCMD(BLEHandle,"IA,Z",WAIT_CMD_RESP,NO_ERROR_IGNORE);			
 			BLE_SendCMD(BLEHandle,"A",WAIT_CMD_RESP,NO_ERROR_IGNORE);	
 			BLE_SendCMD(BLEHandle,"IA,01,06",WAIT_CMD_RESP,NO_ERROR_IGNORE);

@@ -123,7 +123,11 @@ void EnterStandByMODE(void){
 
 	HAL_RTCEx_DeactivateWakeUpTimer(&RTCHandle);							// Disable all used wakeup sources	  
   __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);												// Clear all related wakeup flags
-	HAL_RTCEx_SetWakeUpTimer_IT(&RTCHandle, 0x0041, RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
+	
+	if(BLEHandle.shorterWakeupTimeout)
+		HAL_RTCEx_SetWakeUpTimer_IT(&RTCHandle, 0x001E, RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
+	else
+		HAL_RTCEx_SetWakeUpTimer_IT(&RTCHandle, 0x0041, RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
 		
 	Log_WriteData(&LogHandle,"PWR/EnterStandBy_x_x");
 	if(LogHandle.isError == 1){

@@ -87,7 +87,7 @@ uint8_t ch3MSB,ch3CSB,ch3LSB;
 uint8_t dataPacket[130] = "ANssD11D12D13S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2S0S1S2CC";
 uint8_t batteryPacket[10] = "BAT:000\r\n";
 uint8_t accPacket[19] = "ACC:+000+111+222\r\n";
-uint8_t dfuErrPacket[11] = "DFU:ErrX\r\n";
+//uint8_t dfuErrPacket[11] = "DFU:ErrX\r\n";
 uint8_t errPacket[9] = "ERR:01\r\n";
 uint8_t dbgPacket[26] = "DBG:01234567890123456789\r\n";
 uint8_t batteryPercentage;
@@ -125,17 +125,12 @@ int main(void)
   SystemClock_Config();	
 
 	//BLE_Init(&BLEUartHandle,&BLEHandle,&BLE_DFUHandle,0);
-	//while(HAL_GPIO_ReadPin(BT_CFG1_PORT,BT_CFG1_PIN) == GPIO_PIN_SET){}
-	
-	if(HAL_GPIO_ReadPin(GPIOH,GPIO_PIN_3) == GPIO_PIN_SET) {
-		mTimer_LBlinkStatus_Stop(&mTimHandle);
-		mTimer_LBlinkError_Stop(&mTimHandle);
-		mTimHandle.lblinkUSBCharge = 1;
-	} 
+	//while(HAL_GPIO_ReadPin(BT_CFG1_PORT,BT_CFG1_PIN) == GPIO_PIN_SET){}	
 		
 	programStage = SYSTEM_INIT;
 	//programStage = SYSTEM_INIT_WITHOUT_BLE;
 	LogHandle.isError = 0;
+	BLEHandle.shorterWakeupTimeout = 0;
 	RTC_Config(&RTCHandle);
 	
 	__HAL_RCC_PWR_CLK_ENABLE();
@@ -160,6 +155,13 @@ int main(void)
 	ECG_Init(&ECGSpiHandle,&ECGHandle);
   GYACC_Init(&ACCI2cHandle,&GYACCHandle);
 	mTimer_Config(&TimHandle, &mTimHandle);
+	
+	
+	if(HAL_GPIO_ReadPin(GPIOH,GPIO_PIN_3) == GPIO_PIN_SET) {
+		mTimer_LBlinkStatus_Stop(&mTimHandle);
+		mTimer_LBlinkError_Stop(&mTimHandle);
+		mTimHandle.lblinkUSBCharge = 1;
+	} 
 	
 	
 if(programStage == SYSTEM_INIT_WITHOUT_BLE){
@@ -195,10 +197,10 @@ else if(programStage == SYSTEM_INIT){
 
 	
 	while(1){
-		if((BLEHandle.uartBufferForward == 0)&&(BLEHandle.uartHandle->RxXferCount<50)){
-				//BLEHandle.uartHandle->RxXferSize  = 200;
+		/*if((BLEHandle.uartBufferForward == 0)&&(BLEHandle.uartHandle->RxXferCount<50)){
+				BLEHandle.uartHandle->RxXferSize  = 200;
 			}	
-
+		*/
 		if(HAL_GPIO_ReadPin(GPIOH,GPIO_PIN_3) == GPIO_PIN_SET) {
 			mTimer_LBlinkStatus_Stop(&mTimHandle);
 			mTimer_LBlinkError_Stop(&mTimHandle);
@@ -351,7 +353,8 @@ else if(programStage == SYSTEM_INIT){
 				BLEHandle.connectionStatus = DISCONNECTED_ADVERTISING;	
 				programStage = BLE_WAIT_CONN;
 				startTIM1 = 1;				
-				BLE_EnterCMDMode(&BLEHandle, WAIT_CMD_RESP, ERROR_IGNORE);						
+				BLE_EnterCMDMode(&BLEHandle, WAIT_CMD_RESP, ERROR_IGNORE);		
+				HAL_Delay(20);
 				BLEHandle.cmdMode = 1;
 		}
 		//==========Check BLE module status using STATUS pins========//
@@ -404,7 +407,8 @@ else if(programStage == SYSTEM_INIT){
 					programStage = BLE_WAIT_CONN;
 					startTIM1 = 1;
 					
-					BLE_EnterCMDMode(&BLEHandle, WAIT_CMD_RESP, ERROR_IGNORE);					
+					BLE_EnterCMDMode(&BLEHandle, WAIT_CMD_RESP, ERROR_IGNORE);		
+					HAL_Delay(20);
 					BLEHandle.cmdMode = 1;
 				}
 				
@@ -417,13 +421,16 @@ else if(programStage == SYSTEM_INIT){
 			if(BLEHandle.ackOrAppMessage.message==APP_DFU_PACKET){
 				if(BLE_DFU_Process(&BLEHandle)==BLE_OK){
 					if(BLEHandle.dfuHandle->dfuCompleted){
-						BLE_SendData(&BLEHandle,(uint8_t*)"DFU:Succ\r\n",10);						
+						errPacket[4] = '0';													//ERROR 00 means everything is OK
+						errPacket[5] = '0';
+						BLE_SendData(&BLEHandle,errPacket,8);						
 						HAL_NVIC_SystemReset();	
 					}					
 				}
 				else{
-					dfuErrPacket[7] = BLEHandle.dfuHandle->dfuError + 0x30;
-					BLE_SendData(&BLEHandle,dfuErrPacket,10);
+					errPacket[4] = '9';													//ERROR 9x refers to DFU errors						
+					errPacket[5] = BLEHandle.dfuHandle->dfuError + 0x30;
+					BLE_SendData(&BLEHandle,errPacket,8);
 					EnterLowEnergyMODE();
 					
 					programStage = BLE_WAIT_CONN;
@@ -541,6 +548,7 @@ else if(programStage == SYSTEM_INIT){
 					
 					HAL_Delay(200);
 					BLE_EnterCMDMode(&BLEHandle, WAIT_CMD_RESP,ERROR_IGNORE);
+					HAL_Delay(20);
 					BLE_EnterLPMode(&BLEHandle);
 					EnterStandByMODE();
 					BLE_ExitLPMode(&BLEHandle);
@@ -765,11 +773,12 @@ else if(programStage == SYSTEM_INIT){
 					}
 					if(ECGHandle.dataFIFOAvailable> (ECG_FIFO_SIZE*4/5)){
 						programStage = BLE_WAIT_START_ACQ;
-						ECGHandle.ecgStatus = ECG_ERROR;
-						ECGHandle.ErrorNumber = ECG_FIFO_ERROR;
-						startTIM1 = 1;
-						EnterLowEnergyMODE();
-						//BLE_SendData(&BLEHandle,errorPacket,129);  //transmit error message
+						startTIM1 = 1;						
+#ifdef ECG_Du_v2_Board
+						ECG_Stop_Acquisition(&ECGHandle);
+						GYACC_Stop_Acquisition(&GYACCHandle);
+#endif						
+						EnterLowEnergyMODE();						
 					}
 				}
 				else{																						//not used
@@ -819,9 +828,9 @@ void Error_Handler(void)
 	else if(ECGHandle.ErrorNumber == ECG_FIFO_ERROR){
 	}
 	else{
-		BLE_EnterCMDMode(&BLEHandle, WAIT_CMD_RESP,ERROR_IGNORE);				
+		/*BLE_EnterCMDMode(&BLEHandle, WAIT_CMD_RESP,ERROR_IGNORE);				
 		BLE_EnterLPMode(&BLEHandle);	
-		EnterStandByMODE();
+		EnterStandByMODE();*/
 	}	
 }
 

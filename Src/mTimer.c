@@ -216,6 +216,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	}
 	//==============ECG module error occured==========//
 	
+	//==============GYACC module error occured==========//
+	if(ECGHandle.ecgStatus == GYACC_ERROR){	
+		mTimer_LBlinkStatus_Stop(&mTimHandle);
+		mTimer_LBlinkError_Start(&mTimHandle,GYACCHandle.ErrorNumber,4);
+	}
+	//==============GYACC module error occured==========//
+	
 	if(mTimHandle.timer1_enabled){
 		mTimHandle.timer1_counter += mTimHandle.period;
 		if(mTimHandle.timer1_counter >= mTimHandle.timer1_timeout){

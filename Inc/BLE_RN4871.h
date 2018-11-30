@@ -186,7 +186,8 @@ typedef struct{
 		uint16_t repeatDataPacketNumber;							//Number of packet that needs to be repeated
 		uint8_t repeatDataPacketCounter;							//This parameter counts number of received data transfering error acknowledges (APP_DNOK)
 		uint8_t connParamsUpdateCounter;							//This parameter counts number of connection parameter updates
-		uint8_t batteryAdvPercentage;
+		uint8_t batteryAdvPercentage;									//Battery percentage
+		uint8_t shorterWakeupTimeout;									//Indicates that due to some reasons device is not configured properly and RTCWakup timout must be shorter
 	
 }BLE_TypeDef;
 

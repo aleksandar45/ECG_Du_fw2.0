@@ -2,6 +2,7 @@
 
 extern ECG_TypeDef ECGHandle;
 extern mTimerHandler_TypeDef  mTimHandle;
+extern Log_TypeDef  LogHandle;
 
 void ECG_Init(SPI_HandleTypeDef* spiHandle, ECG_TypeDef* ECGHandle){
 	uint32_t read_value;
@@ -49,7 +50,9 @@ void ECG_Init(SPI_HandleTypeDef* spiHandle, ECG_TypeDef* ECGHandle){
 	//|2:0|		Output data rate (110 = HR mode 500SPS(LP mode 250SPS), 101 = HR mode 1000SPS(LP mode 500SPS),...000 = HR mode 32kSPS (LP mode 16kSPS))	
 	Write_Register_ECG(spiHandle,ECG_CONFIG1,0x86); 									//CONFIG1 = HR, 500SPS					
 	read_value=Read_Register_ECG(spiHandle,ECG_CONFIG1);
-	if(read_value!=0x86) error_ecg = 0x01;
+	if(read_value!=0x86) {		
+		error_ecg = 0x01;
+	}
 	
 	//----------------CONFIG2 Register----------------------------//
 	//|7:6|		Reserved = always write 0
@@ -115,6 +118,11 @@ void ECG_Init(SPI_HandleTypeDef* spiHandle, ECG_TypeDef* ECGHandle){
 	if(read_value!=0x80) error_ecg = 0x01;
 #endif
 	
+	//HAL_Delay(10);
+	if(error_ecg){
+		Log_WriteData(&LogHandle, "ECG/Init/Error_0_0_1");
+	}
+	
 	//-----------------RLD_SENSP Register----------------------------//
 	//|x|			Route channel x to positive signal derivation (0 = disabled, 1 = enabled)	
 	Write_Register_ECG(spiHandle,ECG_RLD_SENSP,0x03);									//RLD_SENSP = sense from channel 1 and 2
@@ -163,6 +171,7 @@ void ECG_Init(SPI_HandleTypeDef* spiHandle, ECG_TypeDef* ECGHandle){
 	if(error_ecg){
 		ECGHandle->ecgStatus = ECG_ERROR;
 		ECGHandle->ErrorNumber = ECG_INIT_ERROR;
+		Log_WriteData(&LogHandle, "ECG/Init/Error_0_0_2");
 	}
 #endif
 }

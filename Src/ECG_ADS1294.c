@@ -6,7 +6,7 @@ extern Log_TypeDef  LogHandle;
 
 void ECG_Init(SPI_HandleTypeDef* spiHandle, ECG_TypeDef* ECGHandle){
 	uint32_t read_value;
-	uint8_t error_ecg;
+	uint8_t error_ecg = 0;
 	
 	//-----------Electrodes connection----------------//
 	// LF-> CH1P
@@ -50,9 +50,7 @@ void ECG_Init(SPI_HandleTypeDef* spiHandle, ECG_TypeDef* ECGHandle){
 	//|2:0|		Output data rate (110 = HR mode 500SPS(LP mode 250SPS), 101 = HR mode 1000SPS(LP mode 500SPS),...000 = HR mode 32kSPS (LP mode 16kSPS))	
 	Write_Register_ECG(spiHandle,ECG_CONFIG1,0x86); 									//CONFIG1 = HR, 500SPS					
 	read_value=Read_Register_ECG(spiHandle,ECG_CONFIG1);
-	if(read_value!=0x86) {		
-		error_ecg = 0x01;
-	}
+	if(read_value!=0x86) error_ecg = 0x01;
 	
 	//----------------CONFIG2 Register----------------------------//
 	//|7:6|		Reserved = always write 0
@@ -64,7 +62,7 @@ void ECG_Init(SPI_HandleTypeDef* spiHandle, ECG_TypeDef* ECGHandle){
 	Write_Register_ECG(spiHandle,ECG_CONFIG2,0x10);										//CONFIG2 = TEST internall 
 	read_value=Read_Register_ECG(spiHandle,ECG_CONFIG2);
 	if(read_value!=0x10) error_ecg = 0x01;
-	
+
 	//----------------CONFIG3 Register----------------------------//
 	//|7|			Power down reference buffer (0 = Power down internal reference buffer, 1 = Enable internal reference buffer)
 	//|6|			Reserved = always write 1
@@ -113,9 +111,9 @@ void ECG_Init(SPI_HandleTypeDef* spiHandle, ECG_TypeDef* ECGHandle){
 	read_value=Read_Register_ECG(spiHandle,ECG_CH3SET);
 	if(read_value!=0x20) error_ecg = 0x01;
 	
-  Write_Register_ECG(spiHandle,ECG_CH4SET,0x80);    								//CH4SET  = Powered down
+  Write_Register_ECG(spiHandle,ECG_CH4SET,0x20);    								//CH4SET  = Gain 2, Normal electrode
 	read_value=Read_Register_ECG(spiHandle,ECG_CH4SET);
-	if(read_value!=0x80) error_ecg = 0x01;
+	if(read_value!=0x20) error_ecg = 0x01;
 #endif
 	
 	//HAL_Delay(10);

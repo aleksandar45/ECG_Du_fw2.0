@@ -65,7 +65,7 @@
 	#define DATA_BUFFER_SIZE			980
 	
 	//#define MCU_TEST_DATA
-	#define ECG_TEST_DATA
+	//#define ECG_TEST_DATA
 #endif
 
 #ifdef RN4871_Nucleo_Test_Board

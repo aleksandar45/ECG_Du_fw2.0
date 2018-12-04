@@ -3,7 +3,6 @@
 extern mTimerHandler_TypeDef  mTimHandle;
 extern BLE_TypeDef	BLEHandle;
 extern ECG_TypeDef ECGHandle;
-extern BATT_TypeDef BATTHandle;
 extern GYACC_TypeDef GYACCHandle;
 extern Log_TypeDef  LogHandle;
 
@@ -145,7 +144,6 @@ void mTimer_LBlinkStatus_Stop(mTimerHandler_TypeDef * mTim){
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	
-	//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_6);
 #ifdef MCU_TEST_DATA
 	uint8_t i;
 	if((programStage == BLE_ACQ_TRANSFERING) || (programStage == BLE_ACQ_TRANSFERING_AND_STORING)){
@@ -178,22 +176,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 		GYACCHandle.angleIndex = 0;
 		GYACCHandle.newDataAvailable = 1;
 	}
-#endif	
-
-	//=============ADC battery measure=================//
-	if(BATTHandle.adcEnabled){
-		if(BATTHandle.preparingNewData){
-			BATTHandle.preparingNewData = 0;
-		}
-		else{
-			if(BATTHandle.adcDataReady == 0){
-				BATTHandle.currentADCValue = HAL_ADC_GetValue(BATTHandle.adcHandle);
-				BATTHandle.adcDataReady = 1;
-				BATTHandle.preparingNewData = 1;			
-			}
-		}
-	}
-	//=============ADC battery measure=================//
+#endif		
 	
 	//==============BLE module error occured==========//
 	BLEHandle.CMDTimeoutCounter+=mTimHandle.period;

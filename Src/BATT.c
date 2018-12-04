@@ -1,6 +1,7 @@
 #include "BATT.h"
 
 uint32_t battDischargeVoltages[6] = {3880,3780,3690,3630,3510,3200};
+extern BATT_TypeDef BATTHandle;
 
 void BATT_Init(ADC_HandleTypeDef* hadc, BATT_TypeDef* BATTHandle){
 	
@@ -15,37 +16,51 @@ void BATT_Init(ADC_HandleTypeDef* hadc, BATT_TypeDef* BATTHandle){
 
 void BATT_StartMeasure(BATT_TypeDef* BATTHandle){
 	//uint32_t tempData32;
-  HAL_ADC_Start(BATTHandle->adcHandle);
-	
+  HAL_ADC_Start_IT(BATTHandle->adcHandle);	
 	BATTHandle->adcDataReady = 0;
-	BATTHandle->preparingNewData = 0;
-  HAL_ADC_PollForConversion(BATTHandle->adcHandle,200);
 	BATTHandle->adcEnabled = 1;
-	//tempData32 = HAL_ADC_GetValue(BATTHandle->adcHandle);	
 	
 }
 
 void BATT_ReadADCData(BATT_TypeDef* BATTHandle){
-	BATTHandle->adcValuesBuffer[BATTHandle->adcValuesCounter++] = 	BATTHandle->currentADCValue;
+	BATTHandle->adcValuesBattBuffer[BATTHandle->adcValuesCounter] = 	BATTHandle->currentADCBattValue;
+	BATTHandle->adcValuesVregBuffer[BATTHandle->adcValuesCounter++] = 	BATTHandle->currentADCVregValue;
 	if(BATTHandle->adcValuesCounter >=10) {
 		BATTHandle->adcBufferFull = 1;
 		BATTHandle->adcValuesCounter = 0;
 	}
 }
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
+	if(BATTHandle.adcEnabled){		
+		if( __HAL_ADC_GET_FLAG(hadc, ADC_FLAG_EOS)){
+			BATTHandle.currentADCVregValue = HAL_ADC_GetValue(BATTHandle.adcHandle);
+			BATTHandle.adcDataReady = 1;	
+		}			
+		else{
+			BATTHandle.currentADCBattValue = HAL_ADC_GetValue(BATTHandle.adcHandle);
+		}
+	}
+}
 uint32_t BATT_CalculateVoltage(BATT_TypeDef* BATTHandle){
-	uint32_t tempData32=0;
+	uint32_t tempData32=0,vReg = 0, vdda = 0;
 	uint8_t i;
 	for(i=0;i<10;i++){
-		tempData32+=BATTHandle->adcValuesBuffer[i];
+		vReg+=BATTHandle->adcValuesVregBuffer[i];
 	}
-	tempData32 = tempData32/10;
+	vReg = vReg/10;	
+	vdda = __LL_ADC_CALC_VREFANALOG_VOLTAGE(vReg,LL_ADC_RESOLUTION_12B);
+	
+	for(i=0;i<10;i++){
+		tempData32+=BATTHandle->adcValuesBattBuffer[i];
+	}
+	tempData32 = tempData32/10;	
 	
 #ifdef RN4871_Nucleo_Test_Board
 	#ifdef DEBUG_MODE
 		return 3600;
 	#endif
 #endif
-	return (tempData32 * VDD_APPLIED * GAIN)/AD_RANGE_12BITS;
+	return (tempData32 * vdda * GAIN)/AD_RANGE_12BITS;
 	
 }
 uint8_t BATT_CalculatePercentage(BATT_TypeDef* BATTHandle){

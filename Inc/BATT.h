@@ -24,9 +24,11 @@ typedef struct
 {
 			ADC_HandleTypeDef* adcHandle;					//ADC handle
 	
-			uint32_t adcValuesBuffer[10];					//Buffer for adc values storage
-			uint8_t adcValuesCounter;							//Index of adcValuesBuffer
-			uint32_t currentADCValue;							//Currently read adc value
+			uint32_t adcValuesBattBuffer[10];			//Buffer for battery adc values storage
+			uint32_t adcValuesVregBuffer[10];			//Buffer for voltage regulator adc values storage
+			uint8_t adcValuesCounter;							//Index of previous two buffers
+			uint32_t currentADCBattValue;					//Currently read adc battery value
+			uint32_t currentADCVregValue;					//Currently read adc voltage regulator value
 	
 			uint32_t currentBatteryVoltage;				//Current battery voltage value in mV		
 			uint32_t *batteryDischargeMap;				//Aproximation of battery voltage vs percentage buffer. Expected 6 voltages; so each value represents 20% of discharge. Voltage values are in mV
@@ -35,7 +37,7 @@ typedef struct
 			uint8_t  adcBufferFull;								//Flag that specifies if adcValuesBuffer is filled completely with adc values
 			uint8_t  adcEnabled;									//Flag that specifies whether adc conversion is enabled or disabled	
 __IO 	uint8_t  adcDataReady;								//Flag that specifies whether new adc data is read and stored in currentADCValue variable
-__IO  uint8_t  preparingNewData;						//Flag that specifies if new data is being measured
+//__IO  uint8_t  preparingNewData;						//Flag that specifies if new data is being measured
 	
 }BATT_TypeDef;
 

@@ -123,15 +123,15 @@ void ECG_Init(SPI_HandleTypeDef* spiHandle, ECG_TypeDef* ECGHandle){
 	
 	//-----------------RLD_SENSP Register----------------------------//
 	//|x|			Route channel x to positive signal derivation (0 = disabled, 1 = enabled)	
-	Write_Register_ECG(spiHandle,ECG_RLD_SENSP,0x03);									//RLD_SENSP = sense from channel 1 and 2
+	Write_Register_ECG(spiHandle,ECG_RLD_SENSP,0x05);									//RLD_SENSP = sense from channel 1 and 2
 	read_value=Read_Register_ECG(spiHandle,ECG_RLD_SENSP);
-	if(read_value!=0x03) error_ecg = 0x01;
+	if(read_value!=0x05) error_ecg = 0x01;
 	
 	//-----------------RLD_SENSN Register----------------------------//
 	//|x|			Route channel x to negative signal derivation (0 = disabled, 1 = enabled)	
-	Write_Register_ECG(spiHandle,ECG_RLD_SENSN,0x00);									//RLD_SENSN = sense from chanel 1 and 2
+	Write_Register_ECG(spiHandle,ECG_RLD_SENSN,0x05);									//RLD_SENSN = sense from chanel 1 and 2
 	read_value=Read_Register_ECG(spiHandle,ECG_RLD_SENSN);
-	if(read_value!=0x00) error_ecg = 0x01;
+	if(read_value!=0x05) error_ecg = 0x01;
 	
 	//-----------------CONFIG4 Register----------------------------//
 	//|7:5|		Respiration frequency (000 = 64kHz modulation clock,...)

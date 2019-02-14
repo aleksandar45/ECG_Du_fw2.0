@@ -399,7 +399,7 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)
   HAL_GPIO_DeInit(GPIOA, GPIO_PIN_1);
 	
 	// De-Initialize the DMA associated to transmission process 
-  HAL_DMA_DeInit(&hdmaUART_tx);
+  //HAL_DMA_DeInit(&hdmaUART_tx);
 	
 /*	// De-Initialize the DMA associated to reception process 
   HAL_DMA_DeInit(&hdmaUART_rx);*/

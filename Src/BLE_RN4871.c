@@ -28,7 +28,7 @@ void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle){
 	HAL_GPIO_WritePin(BT_RESET_PORT,BT_RESET_PIN,GPIO_PIN_RESET);				//Hardware Reset					
 	HAL_Delay(1);
 	HAL_GPIO_WritePin(BT_RESET_PORT,BT_RESET_PIN,GPIO_PIN_SET);
-	HAL_Delay(100);
+	HAL_Delay(500);
 	
 	if(compareUartMessage(BLEHandle,"%REBOOT",7,SEEK_TO_END)==0){
 	//if(mByteCmp(BLEHandle->uartReceiveBuffer,"%REBOOT",7)==0){					//check BLE UART with BaudRate = 115200 and hardware control off
@@ -161,7 +161,7 @@ void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle){
 	HAL_GPIO_WritePin(BT_RESET_PORT,BT_RESET_PIN,GPIO_PIN_RESET);				//Hardware Reset					
 	HAL_Delay(1);
 	HAL_GPIO_WritePin(BT_RESET_PORT,BT_RESET_PIN,GPIO_PIN_SET);
-	HAL_Delay(100);
+	HAL_Delay(500);
 	
 	if(compareUartMessage(BLEHandle,"%REBOOT#",8,SEEK_TO_END)!=0){			
 		BLEHandle->bleStatus = BLE_ERROR;
@@ -226,7 +226,7 @@ void BLE_Init(UART_HandleTypeDef* uartHandle, BLE_TypeDef* BLEHandle){
 	HAL_GPIO_WritePin(BT_RESET_PORT,BT_RESET_PIN,GPIO_PIN_RESET);				//Hardware Reset					
 	HAL_Delay(1);
 	HAL_GPIO_WritePin(BT_RESET_PORT,BT_RESET_PIN,GPIO_PIN_SET);
-	HAL_Delay(100);
+	HAL_Delay(500);
 
 	if(compareUartMessage(BLEHandle,"%REBOOT#",8,SEEK_TO_END)!=0){				
 		BLEHandle->bleStatus = BLE_ERROR;

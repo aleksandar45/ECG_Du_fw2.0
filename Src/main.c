@@ -118,7 +118,7 @@ int main(void)
 	
 	programStage = SYSTEM_INIT;
 		
-	HAL_Delay(100);																				//Wait to power up ADS1294  			
+	HAL_Delay(200);																				//Wait to power up ADS1294  			
 	BATT_Init(&BATTAdcHandle,&BATTHandle);	
 		
 	ECG_Init(&ECGSpiHandle,&ECGHandle);

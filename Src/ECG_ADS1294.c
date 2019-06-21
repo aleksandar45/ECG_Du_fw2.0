@@ -303,10 +303,12 @@ ECG_StatusTypeDef ECG_WriteFIFOData(ECG_TypeDef* ECGHandle, uint8_t* inputDataBu
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	if(GPIO_Pin == GPIO_PIN_3){
-		mTimer_LBlinkStatus_Stop(&mTimHandle);
-		mTimer_LBlinkError_Stop(&mTimHandle);
-		mTimHandle.lblinkUSBCharge = 1;
+	if(GPIO_Pin == GPIO_PIN_13){
+		if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_13) == GPIO_PIN_SET){
+			mTimer_LBlinkStatus_Stop(&mTimHandle);
+			mTimer_LBlinkError_Stop(&mTimHandle);
+			mTimHandle.lblinkUSBCharge = 1;
+		}
 	}
 	else if(GPIO_Pin == GPIO_PIN_8){
 		if(ECGHandle.acqStarted){			

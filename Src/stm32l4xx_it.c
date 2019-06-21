@@ -199,7 +199,8 @@ void EXTI9_5_IRQHandler(void)
   */
 void EXTI15_10_IRQHandler(void)
 {
-	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_12);			//ACC_INT pin
+	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_12);			//BOOT->BT_UART_TX_IND pin
+	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);			//ACC_INT pin
 }
 #endif
 

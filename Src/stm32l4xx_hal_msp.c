@@ -62,7 +62,7 @@ void HAL_MspInit(void)
 {
 	GPIO_InitTypeDef  GPIO_InitStruct;
 	
-	// BOOT0 PIN
+	/*// BOOT0 PIN
 	__HAL_RCC_GPIOH_CLK_ENABLE();
 	GPIO_InitStruct.Pin = GPIO_PIN_3;
 	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
@@ -70,7 +70,17 @@ void HAL_MspInit(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
   HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);	
 	HAL_NVIC_SetPriority(EXTI3_IRQn, 0xE, 0);
-	HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+	HAL_NVIC_EnableIRQ(EXTI3_IRQn);*/
+	
+	// BT_UART_TX_IND PIN
+	__HAL_RCC_GPIOB_CLK_ENABLE();
+	GPIO_InitStruct.Pin = GPIO_PIN_13;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Pull  = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);	
+	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0xE, 0);
+	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 	
 	
 #ifdef RN4871_Nucleo_Test_Board

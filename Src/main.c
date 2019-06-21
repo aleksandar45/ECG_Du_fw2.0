@@ -157,7 +157,7 @@ int main(void)
 	mTimer_Config(&TimHandle, &mTimHandle);
 	
 	
-	if(HAL_GPIO_ReadPin(GPIOH,GPIO_PIN_3) == GPIO_PIN_SET) {
+	if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_13) == GPIO_PIN_SET) {
 		mTimer_LBlinkStatus_Stop(&mTimHandle);
 		mTimer_LBlinkError_Stop(&mTimHandle);
 		mTimHandle.lblinkUSBCharge = 1;
@@ -201,7 +201,7 @@ else if(programStage == SYSTEM_INIT){
 				BLEHandle.uartHandle->RxXferSize  = 200;
 			}	
 		*/
-		if(HAL_GPIO_ReadPin(GPIOH,GPIO_PIN_3) == GPIO_PIN_SET) {
+		if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_13) == GPIO_PIN_SET) {
 			mTimer_LBlinkStatus_Stop(&mTimHandle);
 			mTimer_LBlinkError_Stop(&mTimHandle);
 			mTimHandle.lblinkUSBCharge = 1;
@@ -558,7 +558,7 @@ else if(programStage == SYSTEM_INIT){
 					startTIM1 = 1;
 				}
 				else if(BLEHandle.ackOrAppMessage.message == APP_DFU){
-					if(HAL_GPIO_ReadPin(GPIOH,GPIO_PIN_3) == GPIO_PIN_SET){
+					if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_13) == GPIO_PIN_SET){
 						HAL_NVIC_SystemReset();
 					}
 				}
